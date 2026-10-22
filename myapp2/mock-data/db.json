@@ -1,0 +1,39 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Maya Hassan",
+      "email": "maya@edusync.com",
+      "password": "098765",
+      "role": "student"
+    },
+    {
+      "id": 2,
+      "name": "Ahmed Ali",
+      "email": "ahmed@edusync.com",
+      "password": "123456",
+      "role": "doctor"
+    },
+    {
+      "id": 3,
+      "name": "Sara Mahmoud",
+      "email": "admin@edusync.com",
+      "password": "123456",
+      "role": "admin"
+    },
+    {
+      "id": 4,
+      "name": "Omar Khaled",
+      "email": "omar@edusync.com",
+      "password": "123456",
+      "role": "student"
+    },
+    {
+      "id": 5,
+      "name": "mohamed samir",
+      "email": "maya@edusynccc.com",
+      "password": "234567",
+      "role": "student"
+    }
+  ]
+}

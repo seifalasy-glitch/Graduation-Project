@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "setup": "cd myapp2 && npm install",
+    "server": "cd myapp2 && npm run server",
+    "start": "cd myapp2 && npm start"
+  },
+  "dependencies": {
+    "axios": "^1.20.0"
+  }
+}

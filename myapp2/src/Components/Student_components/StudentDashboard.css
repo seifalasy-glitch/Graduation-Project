@@ -1,0 +1,11 @@
+.menu-item.enroll {
+  color: #6d4aff;
+  border: 1px dashed #c9bbff;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.role-badge.student {
+  color: #6d4aff;
+  border-color: #c9bbff;
+}
