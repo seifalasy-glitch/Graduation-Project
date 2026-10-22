@@ -1,0 +1,25 @@
+.student-courses {
+  margin-top: 30px;
+}
+
+.student-empty {
+  padding: 30px;
+  border: 1px dashed #dddddd;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.student-empty-btn {
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #6d4aff;
+  background-color: #ffffff;
+  border: 1px dashed #c9bbff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.student-empty-btn:hover {
+  background-color: #f5f3ff;
+}

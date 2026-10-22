@@ -1,11 +1,14 @@
 import { useState } from "react";
 import "./AdminDashboard.css";
 import Settings from "../Shared_components/Settings";
+import AdminCourses from "./AdminCourses";
+import AdminEnrollments from "./AdminEnrollments";
 
 const menuItems = [
   { id: "home", label: "Home" },
   { id: "users", label: "Users" },
   { id: "courses", label: "Courses" },
+  { id: "enrollments", label: "Enrollments" },
   { id: "departments", label: "Departments" },
   { id: "reports", label: "Reports" },
   { id: "settings", label: "Settings" },
@@ -80,12 +83,19 @@ function AdminDashboard({ user, onLogout }) {
 
           {page === "settings" && <Settings user={user} />}
 
-          {page !== "home" && page !== "settings" && (
-            <div>
-              <h1 className="coming-soon">{currentItem.label}</h1>
-              <p className="coming-soon-text">This page is coming soon.</p>
-            </div>
-          )}
+          {page === "courses" && <AdminCourses />}
+
+          {page === "enrollments" && <AdminEnrollments />}
+
+          {page !== "home" &&
+            page !== "settings" &&
+            page !== "courses" &&
+            page !== "enrollments" && (
+              <div>
+                <h1 className="coming-soon">{currentItem.label}</h1>
+                <p className="coming-soon-text">This page is coming soon.</p>
+              </div>
+            )}
         </div>
       </main>
     </div>

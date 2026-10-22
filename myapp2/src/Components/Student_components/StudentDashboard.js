@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./StudentDashboard.css";
 import Settings from "../Shared_components/Settings";
+import StudentCourses from "./StudentCourses";
+import StudentEnroll from "./StudentEnroll";
 
 const menuItems = [
   { id: "home", label: "Home" },
@@ -84,12 +86,24 @@ function StudentDashboard({ user, onLogout }) {
 
           {page === "settings" && <Settings user={user} />}
 
-          {page !== "home" && page !== "settings" && (
-            <div>
-              <h1 className="coming-soon">{currentItem.label}</h1>
-              <p className="coming-soon-text">This page is coming soon.</p>
-            </div>
+          {page === "courses" && (
+            <StudentCourses
+              user={user}
+              onGoToEnroll={() => setPage("enroll")}
+            />
           )}
+
+          {page === "enroll" && <StudentEnroll user={user} />}
+
+          {page !== "home" &&
+            page !== "settings" &&
+            page !== "courses" &&
+            page !== "enroll" && (
+              <div>
+                <h1 className="coming-soon">{currentItem.label}</h1>
+                <p className="coming-soon-text">This page is coming soon.</p>
+              </div>
+            )}
         </div>
       </main>
     </div>

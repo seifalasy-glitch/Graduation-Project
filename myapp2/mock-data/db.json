@@ -34,6 +34,73 @@
       "email": "maya@edusynccc.com",
       "password": "234567",
       "role": "student"
+    },
+    {
+      "id": 6,
+      "name": "Mona Adel",
+      "email": "mona@edusync.com",
+      "password": "123456",
+      "role": "doctor"
+    }
+  ],
+  "courses": [
+    {
+      "id": 1,
+      "name": "Introduction to Programming",
+      "code": "CS101",
+      "hours": 3
+    },
+    {
+      "id": 2,
+      "name": "Data Structures",
+      "code": "CS201",
+      "hours": 3
+    },
+    {
+      "id": 3,
+      "name": "Database Systems",
+      "code": "CS301",
+      "hours": 3
+    },
+    {
+      "id": 4,
+      "name": "Web Development",
+      "code": "CS305",
+      "hours": 2
+    },
+    {
+      "id": 5,
+      "name": "Computer Networks",
+      "code": "CS310",
+      "hours": 3
+    }
+  ],
+  "assignments": [
+    {
+      "id": 1,
+      "courseId": 1,
+      "doctorId": 2,
+      "term": "winter"
+    },
+    {
+      "id": 2,
+      "courseId": 4,
+      "doctorId": 2,
+      "term": "summer"
+    },
+    {
+      "id": 3,
+      "courseId": 2,
+      "doctorId": 6,
+      "term": "spring"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "assignmentId": 1,
+      "courseId": 1
     }
   ]
 }

@@ -1,0 +1,10 @@
+.doctor-courses {
+  margin-top: 30px;
+}
+
+.doctor-empty {
+  padding: 30px;
+  border: 1px dashed #dddddd;
+  border-radius: 14px;
+  text-align: center;
+}

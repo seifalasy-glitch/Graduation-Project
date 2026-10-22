@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./DoctorDashboard.css";
 import Settings from "../Shared_components/Settings";
+import DoctorCourses from "./DoctorCourses";
 
 const menuItems = [
   { id: "home", label: "Home" },
@@ -81,7 +82,9 @@ function DoctorDashboard({ user, onLogout }) {
 
           {page === "settings" && <Settings user={user} />}
 
-          {page !== "home" && page !== "settings" && (
+          {page === "courses" && <DoctorCourses user={user} />}
+
+          {page !== "home" && page !== "settings" && page !== "courses" && (
             <div>
               <h1 className="coming-soon">{currentItem.label}</h1>
               <p className="coming-soon-text">This page is coming soon.</p>
