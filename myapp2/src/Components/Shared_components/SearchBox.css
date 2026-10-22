@@ -1,0 +1,19 @@
+.search-box {
+  display: inline-block;
+  vertical-align: middle;
+  width: 50%;
+  text-align: right;
+}
+
+.search-input {
+  width: 260px;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #dddddd;
+  border-radius: 10px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6d4aff;
+}

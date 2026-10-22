@@ -1,0 +1,70 @@
+.course-card {
+  display: inline-block;
+  vertical-align: top;
+  width: 250px;
+  min-height: 150px;
+  margin: 0 18px 18px 0;
+  padding: 20px;
+  border: 1px solid #eeeeee;
+  border-radius: 14px;
+  background-color: #ffffff;
+}
+
+.course-card-top {
+  margin-bottom: 12px;
+}
+
+.course-card-code {
+  display: inline-block;
+  vertical-align: middle;
+  width: 40%;
+  font-size: 13px;
+  font-weight: bold;
+  color: #6d4aff;
+}
+
+.course-card-term {
+  display: inline-block;
+  vertical-align: middle;
+  width: 60%;
+  text-align: right;
+}
+
+.course-card-name {
+  font-size: 19px;
+  margin: 0 0 6px 0;
+}
+
+.course-card-hours {
+  font-size: 14px;
+  color: #777777;
+  margin: 0 0 10px 0;
+}
+
+.course-card-doctor {
+  font-size: 14px;
+  color: #444444;
+  margin: 0 0 14px 0;
+}
+
+.course-card-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #6d4aff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.course-card-btn:hover {
+  background-color: #5a38e8;
+}
+
+.course-card-btn:disabled {
+  color: #2e7d32;
+  background-color: #e8f5e9;
+  cursor: default;
+}
