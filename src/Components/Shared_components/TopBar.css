@@ -1,0 +1,56 @@
+.topbar {
+  position: relative;
+  height: 49px;
+  padding: 0 40px;
+  border-bottom: 1px solid #efefed;
+  background-color: #ffffff;
+}
+
+.topbar-path {
+  line-height: 48px;
+  font-size: 13px;
+  color: #9b9a97;
+}
+
+.topbar-sep {
+  margin: 0 8px;
+}
+
+.topbar-root {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 13px;
+  color: #9b9a97;
+}
+
+.topbar-root:hover,
+.topbar-current {
+  color: #37352f;
+}
+
+.topbar-search {
+  position: absolute;
+  top: 8px;
+  right: 40px;
+  width: 288px;
+  padding: 6px 12px;
+  border: 1px solid #e9e9e7;
+  border-radius: 8px;
+  color: #9b9a97;
+}
+
+.topbar-input {
+  width: 240px;
+  margin-left: 8px;
+  border: none;
+  outline: none;
+  vertical-align: middle;
+  font-size: 13px;
+  color: #37352f;
+  background-color: transparent;
+}
+
+.topbar-input::placeholder {
+  color: #9b9a97;
+}

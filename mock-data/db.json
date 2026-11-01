@@ -1,0 +1,2991 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "university_id": "ADM-0001",
+      "email": "admin@edusync.edu",
+      "name": "Rana Aziz",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "System administrator",
+      "active": true,
+      "created_at": "2026-08-10T09:00:00"
+    },
+    {
+      "id": 2,
+      "university_id": "ADM-0002",
+      "email": "omar.farouk@edusync.edu",
+      "name": "Omar Farouk",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "Registrar office",
+      "active": true,
+      "created_at": "2026-08-12T09:00:00"
+    },
+    {
+      "id": 3,
+      "university_id": "FAC-2041",
+      "email": "alan.reyes@edusync.edu",
+      "name": "Dr. Alan Reyes",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "Computer Science",
+      "active": true,
+      "created_at": "2026-08-14T09:00:00"
+    },
+    {
+      "id": 4,
+      "university_id": "FAC-2050",
+      "email": "priya.nair@edusync.edu",
+      "name": "Dr. Priya Nair",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "Mathematics",
+      "active": true,
+      "created_at": "2026-08-14T09:30:00"
+    },
+    {
+      "id": 5,
+      "university_id": "FAC-2057",
+      "email": "sam.okafor@edusync.edu",
+      "name": "Dr. Sam Okafor",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "Computer Engineering",
+      "active": true,
+      "created_at": "2026-08-14T10:00:00"
+    },
+    {
+      "id": 6,
+      "university_id": "FAC-2063",
+      "email": "lena.ortiz@edusync.edu",
+      "name": "Prof. Lena Ortiz",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "English",
+      "active": true,
+      "created_at": "2026-08-15T09:00:00"
+    },
+    {
+      "id": 7,
+      "university_id": "FAC-2071",
+      "email": "hana.yamada@edusync.edu",
+      "name": "Dr. Hana Yamada",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "Computer Science",
+      "active": true,
+      "created_at": "2026-08-15T09:30:00"
+    },
+    {
+      "id": 8,
+      "university_id": "20230401",
+      "email": "maya.chen@edusync.edu",
+      "name": "Maya Chen",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-01T09:00:00"
+    },
+    {
+      "id": 9,
+      "university_id": "20230412",
+      "email": "layla.haddad@edusync.edu",
+      "name": "Layla Haddad",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-01T09:00:00"
+    },
+    {
+      "id": 10,
+      "university_id": "20230418",
+      "email": "omar.khalil@edusync.edu",
+      "name": "Omar Khalil",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-01T09:05:00"
+    },
+    {
+      "id": 11,
+      "university_id": "20230427",
+      "email": "yusuf.demir@edusync.edu",
+      "name": "Yusuf Demir",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Software Engineering",
+      "active": true,
+      "created_at": "2026-09-01T09:10:00"
+    },
+    {
+      "id": 12,
+      "university_id": "20230433",
+      "email": "sara.mansour@edusync.edu",
+      "name": "Sara Mansour",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-02T09:00:00"
+    },
+    {
+      "id": 13,
+      "university_id": "20230441",
+      "email": "noor.saleh@edusync.edu",
+      "name": "Noor Saleh",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Data Engineering",
+      "active": false,
+      "created_at": "2026-10-02T09:00:00"
+    },
+    {
+      "id": 14,
+      "university_id": "20230452",
+      "email": "adam.rossi@edusync.edu",
+      "name": "Adam Rossi",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-02T09:10:00"
+    },
+    {
+      "id": 15,
+      "university_id": "20230460",
+      "email": "mina.park@edusync.edu",
+      "name": "Mina Park",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Software Engineering",
+      "active": true,
+      "created_at": "2026-09-02T09:20:00"
+    },
+    {
+      "id": 16,
+      "university_id": "20230471",
+      "email": "karim.aziz@edusync.edu",
+      "name": "Karim Aziz",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-09-03T09:00:00"
+    },
+    {
+      "id": 17,
+      "university_id": "20230488",
+      "email": "elena.petrova@edusync.edu",
+      "name": "Elena Petrova",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Data Engineering",
+      "active": true,
+      "created_at": "2026-09-03T09:10:00"
+    },
+    {
+      "id": 18,
+      "university_id": "20230495",
+      "email": "jonas.weber@edusync.edu",
+      "name": "Jonas Weber",
+      "password": "123456",
+      "must_change_password": false,
+      "department": "B.Sc. Computer Science",
+      "active": true,
+      "created_at": "2026-10-05T09:00:00"
+    },
+    {
+      "id": 19,
+      "university_id": "NEW-1001",
+      "email": "salma.fathy@edusync.edu",
+      "name": "Salma Fathy",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "B.Sc. Computer Science",
+      "active": false,
+      "created_at": "2026-10-28T09:00:00"
+    }
+  ],
+  "user_roles": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "role": "admin"
+    },
+    {
+      "id": 3,
+      "user_id": 3,
+      "role": "doctor"
+    },
+    {
+      "id": 4,
+      "user_id": 4,
+      "role": "doctor"
+    },
+    {
+      "id": 5,
+      "user_id": 5,
+      "role": "doctor"
+    },
+    {
+      "id": 6,
+      "user_id": 6,
+      "role": "doctor"
+    },
+    {
+      "id": 7,
+      "user_id": 7,
+      "role": "doctor"
+    },
+    {
+      "id": 8,
+      "user_id": 8,
+      "role": "student"
+    },
+    {
+      "id": 9,
+      "user_id": 9,
+      "role": "student"
+    },
+    {
+      "id": 10,
+      "user_id": 10,
+      "role": "student"
+    },
+    {
+      "id": 11,
+      "user_id": 11,
+      "role": "student"
+    },
+    {
+      "id": 12,
+      "user_id": 12,
+      "role": "student"
+    },
+    {
+      "id": 13,
+      "user_id": 13,
+      "role": "student"
+    },
+    {
+      "id": 14,
+      "user_id": 14,
+      "role": "student"
+    },
+    {
+      "id": 15,
+      "user_id": 15,
+      "role": "student"
+    },
+    {
+      "id": 16,
+      "user_id": 16,
+      "role": "student"
+    },
+    {
+      "id": 17,
+      "user_id": 17,
+      "role": "student"
+    },
+    {
+      "id": 18,
+      "user_id": 18,
+      "role": "student"
+    },
+    {
+      "id": 19,
+      "user_id": 19,
+      "role": "student"
+    }
+  ],
+  "academic_programs": [
+    {
+      "id": 1,
+      "code": "BSC-CS",
+      "name": "BSc Computer Science",
+      "active": true,
+      "department": "Faculty of Computing"
+    },
+    {
+      "id": 2,
+      "code": "BSC-DE",
+      "name": "Data Engineering",
+      "active": true,
+      "department": "Faculty of Computing"
+    },
+    {
+      "id": 3,
+      "code": "BSC-SE",
+      "name": "BSc Software Engineering",
+      "active": true,
+      "department": "Faculty of Computing"
+    },
+    {
+      "id": 4,
+      "code": "BENG-EE",
+      "name": "BEng Electrical Engineering",
+      "active": true,
+      "department": "Faculty of Engineering"
+    },
+    {
+      "id": 5,
+      "code": "BSC-MATH",
+      "name": "BSc Applied Mathematics",
+      "active": true,
+      "department": "Faculty of Science"
+    },
+    {
+      "id": 6,
+      "code": "BA-DM",
+      "name": "BA Digital Media",
+      "active": false,
+      "department": "Faculty of Arts"
+    }
+  ],
+  "academic_terms": [
+    {
+      "id": 1,
+      "academic_year": "2026/2027",
+      "term_type": "fall",
+      "start_date": "2026-09-14",
+      "end_date": "2026-12-24",
+      "add_drop_end": "2026-09-28",
+      "exams_start": "2026-12-12",
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "academic_year": "2026/2027",
+      "term_type": "spring",
+      "start_date": "2027-02-08",
+      "end_date": "2027-05-28",
+      "add_drop_end": "2027-02-22",
+      "exams_start": "2027-05-15",
+      "status": "Scheduled"
+    },
+    {
+      "id": 3,
+      "academic_year": "2025/2026",
+      "term_type": "spring",
+      "start_date": "2026-02-09",
+      "end_date": "2026-05-29",
+      "add_drop_end": "2026-02-23",
+      "exams_start": "2026-05-16",
+      "status": "Archived"
+    }
+  ],
+  "rooms": [
+    {
+      "id": 1,
+      "room_code": "B-114",
+      "name": "Hall B-114",
+      "building": "Engineering B",
+      "capacity": 120,
+      "network_mode": "router",
+      "network": "EDU-B114",
+      "mac_address": "3C:84:6A:1F:22:B0",
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "room_code": "E2-210",
+      "name": "Eng 2-210",
+      "building": "Engineering 2",
+      "capacity": 90,
+      "network_mode": "campus",
+      "network": "Engineering · 10.8.0.0/22",
+      "mac_address": "",
+      "status": "Active"
+    },
+    {
+      "id": 3,
+      "room_code": "LHA",
+      "name": "Lecture Hall A",
+      "building": "Main Building",
+      "capacity": 150,
+      "network_mode": "campus",
+      "network": "Main-Halls · 10.1.0.0/22",
+      "mac_address": "",
+      "status": "Active"
+    },
+    {
+      "id": 4,
+      "room_code": "C-401",
+      "name": "Room 401",
+      "building": "Computer Science",
+      "capacity": 30,
+      "network_mode": "router",
+      "network": "EDU-C401",
+      "mac_address": "A0:F3:C1:55:09:7E",
+      "status": "Pending"
+    },
+    {
+      "id": 5,
+      "room_code": "B-204",
+      "name": "Hall B-204",
+      "building": "Engineering B",
+      "capacity": 80,
+      "network_mode": "router",
+      "network": "EDU-B204",
+      "mac_address": "3C:84:6A:1F:22:C4",
+      "status": "Pending"
+    },
+    {
+      "id": 6,
+      "room_code": "S-012",
+      "name": "Science 012",
+      "building": "Mathematics",
+      "capacity": 60,
+      "network_mode": "campus",
+      "network": "Humanities · 10.20.2.0/24",
+      "mac_address": "",
+      "status": "Active"
+    }
+  ],
+  "courses": [
+    {
+      "id": 1,
+      "course_code": "CS 201",
+      "title": "Data Structures",
+      "credit_hours": 4,
+      "dept": "Computer Science",
+      "prereqs": [
+        "CS 112"
+      ],
+      "syllabus": "Core data structures and their analysis: arrays, linked lists, stacks, queues, trees, heaps, hash tables and graphs.",
+      "topics": [
+        "Linked lists",
+        "Trees",
+        "Hash tables",
+        "Graphs"
+      ]
+    },
+    {
+      "id": 2,
+      "course_code": "CS 340",
+      "title": "Algorithms & Complexity",
+      "credit_hours": 3,
+      "dept": "Computer Science",
+      "prereqs": [
+        "CS 201",
+        "MATH 240"
+      ],
+      "syllabus": "Design and analysis of algorithms: divide and conquer, greedy methods, dynamic programming and NP-completeness.",
+      "topics": [
+        "Greedy",
+        "Dynamic programming",
+        "Graphs",
+        "NP"
+      ]
+    },
+    {
+      "id": 3,
+      "course_code": "CS 112",
+      "title": "Intro to Programming",
+      "credit_hours": 3,
+      "dept": "Computer Science",
+      "prereqs": [],
+      "syllabus": "A first course in programming with Python: variables, control flow, functions, lists and dictionaries.",
+      "topics": [
+        "Python",
+        "Functions",
+        "Loops"
+      ]
+    },
+    {
+      "id": 4,
+      "course_code": "CS 590",
+      "title": "Graduate Seminar: ML Systems",
+      "credit_hours": 2,
+      "dept": "Computer Science",
+      "prereqs": [
+        "CS 420"
+      ],
+      "syllabus": "Graduate seminar on building and operating machine learning systems in production.",
+      "topics": [
+        "MLOps",
+        "Serving",
+        "Data pipelines"
+      ]
+    },
+    {
+      "id": 5,
+      "course_code": "MATH 240",
+      "title": "Linear Algebra",
+      "credit_hours": 3,
+      "dept": "Mathematics",
+      "prereqs": [],
+      "syllabus": "Systems of linear equations, matrices, vector spaces, eigenvalues and orthogonality.",
+      "topics": [
+        "Matrices",
+        "Vector spaces",
+        "Eigenvalues"
+      ]
+    },
+    {
+      "id": 6,
+      "course_code": "CS 230",
+      "title": "Computer Architecture",
+      "credit_hours": 3,
+      "dept": "Computer Engineering",
+      "prereqs": [
+        "CS 112"
+      ],
+      "syllabus": "How computers work: digital logic, datapath design, pipelining and the memory hierarchy.",
+      "topics": [
+        "Logic",
+        "Pipelining",
+        "Caches"
+      ]
+    },
+    {
+      "id": 7,
+      "course_code": "ENG 105",
+      "title": "Technical Writing",
+      "credit_hours": 2,
+      "dept": "English",
+      "prereqs": [],
+      "syllabus": "Clear and persuasive technical writing: memos, proposals, style guides and visual design.",
+      "topics": [
+        "Proposals",
+        "Style",
+        "Editing"
+      ]
+    },
+    {
+      "id": 8,
+      "course_code": "CS 310",
+      "title": "Operating Systems",
+      "credit_hours": 3,
+      "dept": "Computer Science",
+      "prereqs": [
+        "CS 201",
+        "CS 230"
+      ],
+      "syllabus": "Processes, threads, scheduling, memory management and file systems.",
+      "topics": [
+        "Processes",
+        "Memory",
+        "File systems"
+      ]
+    },
+    {
+      "id": 9,
+      "course_code": "MATH 301",
+      "title": "Probability",
+      "credit_hours": 3,
+      "dept": "Mathematics",
+      "prereqs": [
+        "MATH 240"
+      ],
+      "syllabus": "Probability spaces, random variables, distributions and limit theorems.",
+      "topics": [
+        "Random variables",
+        "Distributions"
+      ]
+    },
+    {
+      "id": 10,
+      "course_code": "PHYS 150",
+      "title": "Physics I",
+      "credit_hours": 4,
+      "dept": "Physics",
+      "prereqs": [],
+      "syllabus": "Mechanics: motion, forces, energy and momentum with laboratory work.",
+      "topics": [
+        "Mechanics",
+        "Energy"
+      ]
+    },
+    {
+      "id": 11,
+      "course_code": "CS 420",
+      "title": "Machine Learning",
+      "credit_hours": 3,
+      "dept": "Computer Science",
+      "prereqs": [
+        "CS 201",
+        "MATH 301"
+      ],
+      "syllabus": "Supervised and unsupervised learning, model evaluation and neural networks.",
+      "topics": [
+        "Regression",
+        "Classification",
+        "Neural nets"
+      ]
+    }
+  ],
+  "course_offerings": [
+    {
+      "id": 1,
+      "course_id": 1,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 120,
+      "coursework_max": 40,
+      "days": [
+        "Mon",
+        "Wed"
+      ],
+      "start_hour": 10,
+      "end_hour": 11.5,
+      "room_id": 1,
+      "emoji": "🌲",
+      "syllabus_progress": 62
+    },
+    {
+      "id": 2,
+      "course_id": 2,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 90,
+      "coursework_max": 40,
+      "days": [
+        "Tue",
+        "Thu"
+      ],
+      "start_hour": 13.5,
+      "end_hour": 15,
+      "room_id": 2,
+      "emoji": "🧮",
+      "syllabus_progress": 48
+    },
+    {
+      "id": 3,
+      "course_id": 3,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 100,
+      "coursework_max": 40,
+      "days": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
+      "start_hour": 9,
+      "end_hour": 10,
+      "room_id": 3,
+      "emoji": "🐍",
+      "syllabus_progress": 71
+    },
+    {
+      "id": 4,
+      "course_id": 4,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 30,
+      "coursework_max": 40,
+      "days": [
+        "Fri"
+      ],
+      "start_hour": 15,
+      "end_hour": 17,
+      "room_id": 4,
+      "emoji": "🧠",
+      "syllabus_progress": 55
+    },
+    {
+      "id": 5,
+      "course_id": 5,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 60,
+      "coursework_max": 40,
+      "days": [
+        "Tue",
+        "Thu"
+      ],
+      "start_hour": 11,
+      "end_hour": 12.5,
+      "room_id": 6,
+      "emoji": "📐",
+      "syllabus_progress": 50
+    },
+    {
+      "id": 6,
+      "course_id": 6,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 60,
+      "coursework_max": 40,
+      "days": [
+        "Mon",
+        "Wed"
+      ],
+      "start_hour": 13,
+      "end_hour": 14.5,
+      "room_id": 5,
+      "emoji": "🖥️",
+      "syllabus_progress": 45
+    },
+    {
+      "id": 7,
+      "course_id": 7,
+      "term_id": 1,
+      "section": "A",
+      "capacity": 40,
+      "coursework_max": 40,
+      "days": [
+        "Thu"
+      ],
+      "start_hour": 9,
+      "end_hour": 11,
+      "room_id": 6,
+      "emoji": "✍️",
+      "syllabus_progress": 60
+    },
+    {
+      "id": 8,
+      "course_id": 8,
+      "term_id": 2,
+      "section": "A",
+      "capacity": 80,
+      "coursework_max": 40,
+      "days": [
+        "Mon",
+        "Wed"
+      ],
+      "start_hour": 11,
+      "end_hour": 12.5,
+      "room_id": 2,
+      "emoji": "⚙️",
+      "syllabus_progress": 0
+    },
+    {
+      "id": 9,
+      "course_id": 11,
+      "term_id": 2,
+      "section": "A",
+      "capacity": 70,
+      "coursework_max": 40,
+      "days": [
+        "Tue"
+      ],
+      "start_hour": 14,
+      "end_hour": 17,
+      "room_id": 3,
+      "emoji": "🤖",
+      "syllabus_progress": 0
+    }
+  ],
+  "student_groups": [
+    {
+      "id": 1,
+      "offering_id": 1,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 2,
+      "offering_id": 1,
+      "group_type": "lecture",
+      "label": "Section B"
+    },
+    {
+      "id": 3,
+      "offering_id": 1,
+      "group_type": "lab",
+      "label": "Lab 1"
+    },
+    {
+      "id": 4,
+      "offering_id": 2,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 5,
+      "offering_id": 3,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 6,
+      "offering_id": 4,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 7,
+      "offering_id": 5,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 8,
+      "offering_id": 6,
+      "group_type": "lecture",
+      "label": "Section A"
+    },
+    {
+      "id": 9,
+      "offering_id": 7,
+      "group_type": "lecture",
+      "label": "Section C"
+    }
+  ],
+  "teaching_assignments": [
+    {
+      "id": 1,
+      "group_id": 1,
+      "doctor_user_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 2,
+      "group_id": 2,
+      "doctor_user_id": 7,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 3,
+      "group_id": 3,
+      "doctor_user_id": 7,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 4,
+      "group_id": 4,
+      "doctor_user_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 5,
+      "group_id": 5,
+      "doctor_user_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 6,
+      "group_id": 6,
+      "doctor_user_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 7,
+      "group_id": 7,
+      "doctor_user_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 8,
+      "group_id": 8,
+      "doctor_user_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 9,
+      "group_id": 9,
+      "doctor_user_id": 6,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    }
+  ],
+  "enrollments": [
+    {
+      "id": 1,
+      "student_user_id": 8,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "student_user_id": 9,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "student_user_id": 10,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 4,
+      "student_user_id": 11,
+      "offering_id": 1,
+      "program_id": 3,
+      "status": "active"
+    },
+    {
+      "id": 5,
+      "student_user_id": 12,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 6,
+      "student_user_id": 14,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 7,
+      "student_user_id": 15,
+      "offering_id": 1,
+      "program_id": 3,
+      "status": "active"
+    },
+    {
+      "id": 8,
+      "student_user_id": 16,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 9,
+      "student_user_id": 17,
+      "offering_id": 1,
+      "program_id": 2,
+      "status": "active"
+    },
+    {
+      "id": 10,
+      "student_user_id": 18,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 11,
+      "student_user_id": 9,
+      "offering_id": 2,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 12,
+      "student_user_id": 10,
+      "offering_id": 2,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 13,
+      "student_user_id": 11,
+      "offering_id": 2,
+      "program_id": 3,
+      "status": "active"
+    },
+    {
+      "id": 14,
+      "student_user_id": 14,
+      "offering_id": 2,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 15,
+      "student_user_id": 12,
+      "offering_id": 3,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 16,
+      "student_user_id": 15,
+      "offering_id": 3,
+      "program_id": 3,
+      "status": "active"
+    },
+    {
+      "id": 17,
+      "student_user_id": 16,
+      "offering_id": 3,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 18,
+      "student_user_id": 17,
+      "offering_id": 3,
+      "program_id": 2,
+      "status": "active"
+    },
+    {
+      "id": 19,
+      "student_user_id": 18,
+      "offering_id": 3,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 20,
+      "student_user_id": 9,
+      "offering_id": 4,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 21,
+      "student_user_id": 11,
+      "offering_id": 4,
+      "program_id": 3,
+      "status": "active"
+    },
+    {
+      "id": 22,
+      "student_user_id": 8,
+      "offering_id": 5,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 23,
+      "student_user_id": 10,
+      "offering_id": 5,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 24,
+      "student_user_id": 12,
+      "offering_id": 5,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 25,
+      "student_user_id": 8,
+      "offering_id": 6,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 26,
+      "student_user_id": 14,
+      "offering_id": 6,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 27,
+      "student_user_id": 8,
+      "offering_id": 7,
+      "program_id": 1,
+      "status": "active"
+    },
+    {
+      "id": 28,
+      "student_user_id": 16,
+      "offering_id": 7,
+      "program_id": 1,
+      "status": "active"
+    }
+  ],
+  "group_memberships": [
+    {
+      "id": 1,
+      "enrollment_id": 1,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 2,
+      "enrollment_id": 1,
+      "group_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 3,
+      "enrollment_id": 2,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 4,
+      "enrollment_id": 2,
+      "group_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 5,
+      "enrollment_id": 3,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 6,
+      "enrollment_id": 3,
+      "group_id": 3,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 7,
+      "enrollment_id": 4,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 8,
+      "enrollment_id": 5,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 9,
+      "enrollment_id": 6,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 10,
+      "enrollment_id": 7,
+      "group_id": 2,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 11,
+      "enrollment_id": 8,
+      "group_id": 2,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 12,
+      "enrollment_id": 9,
+      "group_id": 2,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 13,
+      "enrollment_id": 10,
+      "group_id": 2,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 14,
+      "enrollment_id": 11,
+      "group_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 15,
+      "enrollment_id": 12,
+      "group_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 16,
+      "enrollment_id": 13,
+      "group_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 17,
+      "enrollment_id": 14,
+      "group_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 18,
+      "enrollment_id": 15,
+      "group_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 19,
+      "enrollment_id": 16,
+      "group_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 20,
+      "enrollment_id": 17,
+      "group_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 21,
+      "enrollment_id": 18,
+      "group_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 22,
+      "enrollment_id": 19,
+      "group_id": 5,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 23,
+      "enrollment_id": 20,
+      "group_id": 6,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 24,
+      "enrollment_id": 21,
+      "group_id": 6,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 25,
+      "enrollment_id": 22,
+      "group_id": 7,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 26,
+      "enrollment_id": 23,
+      "group_id": 7,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 27,
+      "enrollment_id": 24,
+      "group_id": 7,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 28,
+      "enrollment_id": 25,
+      "group_id": 8,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 29,
+      "enrollment_id": 26,
+      "group_id": 8,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 30,
+      "enrollment_id": 27,
+      "group_id": 9,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    },
+    {
+      "id": 31,
+      "enrollment_id": 28,
+      "group_id": 9,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24"
+    }
+  ],
+  "attendance_sessions": [
+    {
+      "id": 1,
+      "group_id": 1,
+      "room_id": 1,
+      "teaching_assignment_id": 1,
+      "method": "qr",
+      "starts_at": "2026-10-19T10:00:00",
+      "ends_at": "2026-10-19T11:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 2,
+      "group_id": 1,
+      "room_id": 1,
+      "teaching_assignment_id": 1,
+      "method": "qr",
+      "starts_at": "2026-10-21T10:00:00",
+      "ends_at": "2026-10-21T11:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 3,
+      "group_id": 1,
+      "room_id": 1,
+      "teaching_assignment_id": 1,
+      "method": "qr",
+      "starts_at": "2026-10-26T10:00:00",
+      "ends_at": "2026-10-26T11:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 4,
+      "group_id": 1,
+      "room_id": 1,
+      "teaching_assignment_id": 1,
+      "method": "qr",
+      "starts_at": "2026-10-28T10:00:00",
+      "ends_at": "2026-10-28T11:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 5,
+      "group_id": 7,
+      "room_id": 6,
+      "teaching_assignment_id": 7,
+      "method": "qr",
+      "starts_at": "2026-10-27T11:00:00",
+      "ends_at": "2026-10-27T12:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 6,
+      "group_id": 7,
+      "room_id": 6,
+      "teaching_assignment_id": 7,
+      "method": "qr",
+      "starts_at": "2026-10-29T11:00:00",
+      "ends_at": "2026-10-29T12:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 7,
+      "group_id": 8,
+      "room_id": 5,
+      "teaching_assignment_id": 8,
+      "method": "qr",
+      "starts_at": "2026-10-26T13:00:00",
+      "ends_at": "2026-10-26T14:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 8,
+      "group_id": 8,
+      "room_id": 5,
+      "teaching_assignment_id": 8,
+      "method": "qr",
+      "starts_at": "2026-10-28T13:00:00",
+      "ends_at": "2026-10-28T14:30:00",
+      "state": "closed"
+    },
+    {
+      "id": 9,
+      "group_id": 9,
+      "room_id": 6,
+      "teaching_assignment_id": 9,
+      "method": "qr",
+      "starts_at": "2026-10-29T09:00:00",
+      "ends_at": "2026-10-29T10:30:00",
+      "state": "closed"
+    }
+  ],
+  "qr_challenges": [
+    {
+      "id": 1,
+      "session_id": 1,
+      "token_hash": "mock-1-1019",
+      "expires_at": "2026-10-19T10:15:00"
+    },
+    {
+      "id": 2,
+      "session_id": 2,
+      "token_hash": "mock-2-1021",
+      "expires_at": "2026-10-21T10:15:00"
+    },
+    {
+      "id": 3,
+      "session_id": 3,
+      "token_hash": "mock-3-1026",
+      "expires_at": "2026-10-26T10:15:00"
+    },
+    {
+      "id": 4,
+      "session_id": 4,
+      "token_hash": "mock-4-1028",
+      "expires_at": "2026-10-28T10:15:00"
+    },
+    {
+      "id": 5,
+      "session_id": 5,
+      "token_hash": "mock-5-1027",
+      "expires_at": "2026-10-27T11:15:00"
+    },
+    {
+      "id": 6,
+      "session_id": 6,
+      "token_hash": "mock-6-1029",
+      "expires_at": "2026-10-29T11:15:00"
+    },
+    {
+      "id": 7,
+      "session_id": 7,
+      "token_hash": "mock-7-1026",
+      "expires_at": "2026-10-26T13:15:00"
+    },
+    {
+      "id": 8,
+      "session_id": 8,
+      "token_hash": "mock-8-1028",
+      "expires_at": "2026-10-28T13:15:00"
+    },
+    {
+      "id": 9,
+      "session_id": 9,
+      "token_hash": "mock-9-1029",
+      "expires_at": "2026-10-29T09:15:00"
+    }
+  ],
+  "attendance_records": [
+    {
+      "id": 1,
+      "session_id": 1,
+      "enrollment_id": 1,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 2,
+      "session_id": 1,
+      "enrollment_id": 2,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 3,
+      "session_id": 1,
+      "enrollment_id": 3,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 4,
+      "session_id": 1,
+      "enrollment_id": 4,
+      "status": "late",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 5,
+      "session_id": 1,
+      "enrollment_id": 5,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 6,
+      "session_id": 1,
+      "enrollment_id": 6,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-19T10:00:00"
+    },
+    {
+      "id": 7,
+      "session_id": 2,
+      "enrollment_id": 1,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-21T10:00:00"
+    },
+    {
+      "id": 8,
+      "session_id": 2,
+      "enrollment_id": 2,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 9,
+      "session_id": 2,
+      "enrollment_id": 3,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 10,
+      "session_id": 2,
+      "enrollment_id": 4,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-21T10:00:00"
+    },
+    {
+      "id": 11,
+      "session_id": 2,
+      "enrollment_id": 5,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-21T10:00:00"
+    },
+    {
+      "id": 12,
+      "session_id": 2,
+      "enrollment_id": 6,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-21T10:00:00"
+    },
+    {
+      "id": 13,
+      "session_id": 3,
+      "enrollment_id": 1,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-26T10:00:00"
+    },
+    {
+      "id": 14,
+      "session_id": 3,
+      "enrollment_id": 2,
+      "status": "late",
+      "method": "qr",
+      "marked_at": "2026-10-26T10:00:00"
+    },
+    {
+      "id": 15,
+      "session_id": 3,
+      "enrollment_id": 3,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-26T10:00:00"
+    },
+    {
+      "id": 16,
+      "session_id": 3,
+      "enrollment_id": 4,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-26T10:00:00"
+    },
+    {
+      "id": 17,
+      "session_id": 3,
+      "enrollment_id": 5,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 18,
+      "session_id": 3,
+      "enrollment_id": 6,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-26T10:00:00"
+    },
+    {
+      "id": 19,
+      "session_id": 4,
+      "enrollment_id": 1,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T10:00:00"
+    },
+    {
+      "id": 20,
+      "session_id": 4,
+      "enrollment_id": 2,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T10:00:00"
+    },
+    {
+      "id": 21,
+      "session_id": 4,
+      "enrollment_id": 3,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T10:00:00"
+    },
+    {
+      "id": 22,
+      "session_id": 4,
+      "enrollment_id": 4,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T10:00:00"
+    },
+    {
+      "id": 23,
+      "session_id": 4,
+      "enrollment_id": 5,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T10:00:00"
+    },
+    {
+      "id": 24,
+      "session_id": 4,
+      "enrollment_id": 6,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 25,
+      "session_id": 5,
+      "enrollment_id": 22,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-27T11:00:00"
+    },
+    {
+      "id": 26,
+      "session_id": 5,
+      "enrollment_id": 23,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-27T11:00:00"
+    },
+    {
+      "id": 27,
+      "session_id": 5,
+      "enrollment_id": 24,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-27T11:00:00"
+    },
+    {
+      "id": 28,
+      "session_id": 6,
+      "enrollment_id": 22,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 29,
+      "session_id": 6,
+      "enrollment_id": 23,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-29T11:00:00"
+    },
+    {
+      "id": 30,
+      "session_id": 6,
+      "enrollment_id": 24,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-29T11:00:00"
+    },
+    {
+      "id": 31,
+      "session_id": 7,
+      "enrollment_id": 25,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 32,
+      "session_id": 7,
+      "enrollment_id": 26,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-26T13:00:00"
+    },
+    {
+      "id": 33,
+      "session_id": 8,
+      "enrollment_id": 25,
+      "status": "absent",
+      "method": "",
+      "marked_at": ""
+    },
+    {
+      "id": 34,
+      "session_id": 8,
+      "enrollment_id": 26,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-28T13:00:00"
+    },
+    {
+      "id": 35,
+      "session_id": 9,
+      "enrollment_id": 27,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-29T09:00:00"
+    },
+    {
+      "id": 36,
+      "session_id": 9,
+      "enrollment_id": 28,
+      "status": "present",
+      "method": "qr",
+      "marked_at": "2026-10-29T09:00:00"
+    }
+  ],
+  "assignments": [
+    {
+      "id": 1,
+      "due_at": "2026-10-31T23:59:00",
+      "description": "Implement a singly linked list with insert, delete and reverse. Include unit tests.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": [
+        {
+          "name": "Correctness",
+          "desc": "Operations return correct results on all test cases",
+          "points": 40
+        },
+        {
+          "name": "Complexity analysis",
+          "desc": "Big-O justified for insert, delete and search",
+          "points": 25
+        },
+        {
+          "name": "Code quality",
+          "desc": "Readable, documented, idiomatic",
+          "points": 20
+        },
+        {
+          "name": "Testing",
+          "desc": "Edge cases: empty list, single node, duplicates",
+          "points": 15
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "due_at": "2026-11-12T23:59:00",
+      "description": "Build a binary search tree and write in-order, pre-order and post-order traversals.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": [
+        {
+          "name": "Correctness",
+          "desc": "Operations return correct results on all test cases",
+          "points": 40
+        },
+        {
+          "name": "Complexity analysis",
+          "desc": "Big-O justified for insert, delete and search",
+          "points": 25
+        },
+        {
+          "name": "Code quality",
+          "desc": "Readable, documented, idiomatic",
+          "points": 20
+        },
+        {
+          "name": "Testing",
+          "desc": "Edge cases: empty list, single node, duplicates",
+          "points": 15
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "due_at": "2026-10-20T23:59:00",
+      "description": "Report on the array vs linked list timing experiment from Lab 1.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 4,
+      "due_at": "2026-10-26T23:59:00",
+      "description": "Exercises 2.1 – 2.14 on matrix operations and inverses.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 5,
+      "due_at": "2026-11-09T23:59:00",
+      "description": "Exercises 3.1 – 3.10 on vector spaces and bases.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 6,
+      "due_at": "2026-11-07T23:59:00",
+      "description": "Design and simulate a 4-bit ALU. Submit the circuit file and a short report.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 7,
+      "due_at": "2026-11-10T23:59:00",
+      "description": "A 1,500-word proposal for a technical project, following the template from week 5.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 8,
+      "due_at": "2026-11-04T23:59:00",
+      "description": "Prove correctness for three greedy algorithms and implement interval scheduling.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 9,
+      "due_at": "2026-11-15T23:59:00",
+      "description": "Build a small text adventure game using functions, loops and dictionaries.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    },
+    {
+      "id": 10,
+      "due_at": "2026-10-05T23:59:00",
+      "description": "Warm-up exercises on arrays and big-O notation.",
+      "opens_at": "2026-09-20T09:00:00",
+      "rubric": []
+    }
+  ],
+  "submissions": [
+    {
+      "id": 1,
+      "grade_item_id": 3,
+      "enrollment_id": 1,
+      "file_name": "lab_report_1_8.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-20T21:10:00",
+      "created_at": "2026-10-20T21:10:00"
+    },
+    {
+      "id": 2,
+      "grade_item_id": 3,
+      "enrollment_id": 2,
+      "file_name": "lab_report_1_9.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-20T22:40:00",
+      "created_at": "2026-10-20T22:40:00"
+    },
+    {
+      "id": 3,
+      "grade_item_id": 3,
+      "enrollment_id": 3,
+      "file_name": "lab_report_1_10.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-20T23:30:00",
+      "created_at": "2026-10-20T23:30:00"
+    },
+    {
+      "id": 4,
+      "grade_item_id": 4,
+      "enrollment_id": 22,
+      "file_name": "problem_set_2_8.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-26T18:00:00",
+      "created_at": "2026-10-26T18:00:00"
+    },
+    {
+      "id": 5,
+      "grade_item_id": 4,
+      "enrollment_id": 23,
+      "file_name": "problem_set_2_10.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-26T22:15:00",
+      "created_at": "2026-10-26T22:15:00"
+    },
+    {
+      "id": 6,
+      "grade_item_id": 4,
+      "enrollment_id": 24,
+      "file_name": "problem_set_2_12.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-26T23:50:00",
+      "created_at": "2026-10-26T23:50:00"
+    },
+    {
+      "id": 7,
+      "grade_item_id": 10,
+      "enrollment_id": 1,
+      "file_name": "assignment_0_8.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 8,
+      "grade_item_id": 10,
+      "enrollment_id": 2,
+      "file_name": "assignment_0_9.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 9,
+      "grade_item_id": 10,
+      "enrollment_id": 3,
+      "file_name": "assignment_0_10.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 10,
+      "grade_item_id": 10,
+      "enrollment_id": 4,
+      "file_name": "assignment_0_11.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 11,
+      "grade_item_id": 10,
+      "enrollment_id": 5,
+      "file_name": "assignment_0_12.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 12,
+      "grade_item_id": 10,
+      "enrollment_id": 6,
+      "file_name": "assignment_0_14.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 13,
+      "grade_item_id": 10,
+      "enrollment_id": 7,
+      "file_name": "assignment_0_15.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 14,
+      "grade_item_id": 10,
+      "enrollment_id": 8,
+      "file_name": "assignment_0_16.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 15,
+      "grade_item_id": 10,
+      "enrollment_id": 9,
+      "file_name": "assignment_0_17.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 16,
+      "grade_item_id": 10,
+      "enrollment_id": 10,
+      "file_name": "assignment_0_18.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-05T20:00:00",
+      "created_at": "2026-10-05T20:00:00"
+    },
+    {
+      "id": 17,
+      "grade_item_id": 1,
+      "enrollment_id": 2,
+      "file_name": "assignment_1_9.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-29T20:12:00",
+      "created_at": "2026-10-29T20:12:00"
+    },
+    {
+      "id": 18,
+      "grade_item_id": 1,
+      "enrollment_id": 4,
+      "file_name": "assignment_1_11.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-29T22:01:00",
+      "created_at": "2026-10-29T22:01:00"
+    },
+    {
+      "id": 19,
+      "grade_item_id": 1,
+      "enrollment_id": 5,
+      "file_name": "assignment_1_12.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T09:30:00",
+      "created_at": "2026-10-30T09:30:00"
+    },
+    {
+      "id": 20,
+      "grade_item_id": 1,
+      "enrollment_id": 6,
+      "file_name": "assignment_1_14.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T10:05:00",
+      "created_at": "2026-10-30T10:05:00"
+    },
+    {
+      "id": 21,
+      "grade_item_id": 1,
+      "enrollment_id": 7,
+      "file_name": "assignment_1_15.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T11:20:00",
+      "created_at": "2026-10-30T11:20:00"
+    },
+    {
+      "id": 22,
+      "grade_item_id": 1,
+      "enrollment_id": 8,
+      "file_name": "assignment_1_16.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T12:44:00",
+      "created_at": "2026-10-30T12:44:00"
+    },
+    {
+      "id": 23,
+      "grade_item_id": 8,
+      "enrollment_id": 11,
+      "file_name": "homework_4_9.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-29T15:00:00",
+      "created_at": "2026-10-29T15:00:00"
+    },
+    {
+      "id": 24,
+      "grade_item_id": 8,
+      "enrollment_id": 12,
+      "file_name": "homework_4_10.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T08:30:00",
+      "created_at": "2026-10-30T08:30:00"
+    },
+    {
+      "id": 25,
+      "grade_item_id": 9,
+      "enrollment_id": 15,
+      "file_name": "project_1_12.pdf",
+      "attempt_no": 1,
+      "late": false,
+      "submitted_at": "2026-10-30T07:45:00",
+      "created_at": "2026-10-30T07:45:00"
+    }
+  ],
+  "grade_items": [
+    {
+      "id": 1,
+      "offering_id": 1,
+      "title": "Assignment 1: Linked Lists",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 100
+    },
+    {
+      "id": 2,
+      "offering_id": 1,
+      "title": "Assignment 2: Trees & Traversals",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 100
+    },
+    {
+      "id": 3,
+      "offering_id": 1,
+      "title": "Lab Report 1",
+      "item_type": "assignment",
+      "scope": "lab",
+      "max_score": 20
+    },
+    {
+      "id": 4,
+      "offering_id": 5,
+      "title": "Problem Set 2",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 20
+    },
+    {
+      "id": 5,
+      "offering_id": 5,
+      "title": "Problem Set 3",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 20
+    },
+    {
+      "id": 6,
+      "offering_id": 6,
+      "title": "Lab Report 3",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 30
+    },
+    {
+      "id": 7,
+      "offering_id": 7,
+      "title": "Essay Draft: Technical Proposal",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 50
+    },
+    {
+      "id": 8,
+      "offering_id": 2,
+      "title": "Homework 4: Greedy Algorithms",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 50
+    },
+    {
+      "id": 9,
+      "offering_id": 3,
+      "title": "Project 1: Text Adventure",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 100
+    },
+    {
+      "id": 10,
+      "offering_id": 1,
+      "title": "Assignment 0: Warm-up",
+      "item_type": "assignment",
+      "scope": "lecture",
+      "max_score": 10
+    },
+    {
+      "id": 11,
+      "offering_id": 1,
+      "title": "Quiz 1: Complexity",
+      "item_type": "quiz",
+      "scope": "lecture",
+      "max_score": 100
+    },
+    {
+      "id": 12,
+      "offering_id": 1,
+      "title": "Midterm Exam",
+      "item_type": "exam",
+      "scope": "lecture",
+      "max_score": 100
+    },
+    {
+      "id": 13,
+      "offering_id": 5,
+      "title": "Quiz 1: Matrices",
+      "item_type": "quiz",
+      "scope": "lecture",
+      "max_score": 20
+    },
+    {
+      "id": 14,
+      "offering_id": 6,
+      "title": "Quiz 1: Logic Gates",
+      "item_type": "quiz",
+      "scope": "lecture",
+      "max_score": 25
+    },
+    {
+      "id": 15,
+      "offering_id": 7,
+      "title": "Writing Exercise 1",
+      "item_type": "classwork",
+      "scope": "lecture",
+      "max_score": 20
+    },
+    {
+      "id": 16,
+      "offering_id": 2,
+      "title": "Quiz 3: Graphs",
+      "item_type": "quiz",
+      "scope": "lecture",
+      "max_score": 30
+    },
+    {
+      "id": 17,
+      "offering_id": 3,
+      "title": "Quiz 3",
+      "item_type": "quiz",
+      "scope": "lecture",
+      "max_score": 20
+    }
+  ],
+  "student_grades": [
+    {
+      "id": 1,
+      "grade_item_id": 10,
+      "enrollment_id": 1,
+      "source_entry_id": null,
+      "score": 9,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 2,
+      "grade_item_id": 10,
+      "enrollment_id": 2,
+      "source_entry_id": null,
+      "score": 8,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 3,
+      "grade_item_id": 10,
+      "enrollment_id": 3,
+      "source_entry_id": null,
+      "score": 10,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 4,
+      "grade_item_id": 10,
+      "enrollment_id": 4,
+      "source_entry_id": null,
+      "score": 7,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 5,
+      "grade_item_id": 10,
+      "enrollment_id": 5,
+      "source_entry_id": null,
+      "score": 9,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 6,
+      "grade_item_id": 10,
+      "enrollment_id": 6,
+      "source_entry_id": null,
+      "score": 6,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 7,
+      "grade_item_id": 10,
+      "enrollment_id": 7,
+      "source_entry_id": null,
+      "score": 10,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 8,
+      "grade_item_id": 10,
+      "enrollment_id": 8,
+      "source_entry_id": null,
+      "score": 8,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 9,
+      "grade_item_id": 10,
+      "enrollment_id": 9,
+      "source_entry_id": null,
+      "score": 9,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 10,
+      "grade_item_id": 10,
+      "enrollment_id": 10,
+      "source_entry_id": null,
+      "score": 7,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 11,
+      "grade_item_id": 3,
+      "enrollment_id": 1,
+      "source_entry_id": null,
+      "score": 18,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 12,
+      "grade_item_id": 3,
+      "enrollment_id": 2,
+      "source_entry_id": null,
+      "score": 16,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 13,
+      "grade_item_id": 11,
+      "enrollment_id": 1,
+      "source_entry_id": null,
+      "score": 88,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 14,
+      "grade_item_id": 11,
+      "enrollment_id": 2,
+      "source_entry_id": null,
+      "score": 84,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 15,
+      "grade_item_id": 11,
+      "enrollment_id": 3,
+      "source_entry_id": null,
+      "score": 91,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 16,
+      "grade_item_id": 11,
+      "enrollment_id": 4,
+      "source_entry_id": null,
+      "score": 58,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 17,
+      "grade_item_id": 11,
+      "enrollment_id": 5,
+      "source_entry_id": null,
+      "score": 77,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 18,
+      "grade_item_id": 11,
+      "enrollment_id": 6,
+      "source_entry_id": null,
+      "score": 55,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 19,
+      "grade_item_id": 11,
+      "enrollment_id": 7,
+      "source_entry_id": null,
+      "score": 93,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 20,
+      "grade_item_id": 11,
+      "enrollment_id": 8,
+      "source_entry_id": null,
+      "score": 70,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 21,
+      "grade_item_id": 11,
+      "enrollment_id": 9,
+      "source_entry_id": null,
+      "score": 81,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 22,
+      "grade_item_id": 11,
+      "enrollment_id": 10,
+      "source_entry_id": null,
+      "score": 62,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 23,
+      "grade_item_id": 4,
+      "enrollment_id": 22,
+      "source_entry_id": null,
+      "score": 18,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 24,
+      "grade_item_id": 4,
+      "enrollment_id": 23,
+      "source_entry_id": null,
+      "score": 15,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 25,
+      "grade_item_id": 4,
+      "enrollment_id": 24,
+      "source_entry_id": null,
+      "score": 17,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 26,
+      "grade_item_id": 14,
+      "enrollment_id": 25,
+      "source_entry_id": null,
+      "score": 21,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 27,
+      "grade_item_id": 14,
+      "enrollment_id": 26,
+      "source_entry_id": null,
+      "score": 19,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 28,
+      "grade_item_id": 15,
+      "enrollment_id": 27,
+      "source_entry_id": null,
+      "score": 17,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 29,
+      "grade_item_id": 15,
+      "enrollment_id": 28,
+      "source_entry_id": null,
+      "score": 15,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 30,
+      "grade_item_id": 16,
+      "enrollment_id": 11,
+      "source_entry_id": null,
+      "score": 26,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 31,
+      "grade_item_id": 16,
+      "enrollment_id": 12,
+      "source_entry_id": null,
+      "score": 22,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 32,
+      "grade_item_id": 16,
+      "enrollment_id": 13,
+      "source_entry_id": null,
+      "score": 19,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 33,
+      "grade_item_id": 16,
+      "enrollment_id": 14,
+      "source_entry_id": null,
+      "score": 28,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 34,
+      "grade_item_id": 17,
+      "enrollment_id": 15,
+      "source_entry_id": null,
+      "score": 17,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 35,
+      "grade_item_id": 17,
+      "enrollment_id": 16,
+      "source_entry_id": null,
+      "score": 18,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 36,
+      "grade_item_id": 17,
+      "enrollment_id": 17,
+      "source_entry_id": null,
+      "score": 12,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 37,
+      "grade_item_id": 17,
+      "enrollment_id": 18,
+      "source_entry_id": null,
+      "score": 19,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    },
+    {
+      "id": 38,
+      "grade_item_id": 17,
+      "enrollment_id": 19,
+      "source_entry_id": null,
+      "score": 14,
+      "updated_at": "2026-10-08T12:00:00",
+      "deleted_at": null
+    }
+  ],
+  "quizzes": [
+    {
+      "id": 1,
+      "offering_id": 1,
+      "title": "Quiz 1: Complexity",
+      "questions": 10,
+      "minutes": 20,
+      "opens_at": "2026-10-05T09:00:00",
+      "closes_at": "2026-10-07T23:59:00",
+      "status": "Closed",
+      "grade_item_id": 11
+    },
+    {
+      "id": 2,
+      "offering_id": 1,
+      "title": "Quiz 2: Stacks & Queues",
+      "questions": 12,
+      "minutes": 25,
+      "opens_at": "2026-11-02T09:00:00",
+      "closes_at": "2026-11-03T23:59:00",
+      "status": "Scheduled",
+      "grade_item_id": 0
+    },
+    {
+      "id": 3,
+      "offering_id": 5,
+      "title": "Quiz 1: Matrices",
+      "questions": 5,
+      "minutes": 10,
+      "opens_at": "2026-10-27T09:00:00",
+      "closes_at": "2026-12-20T17:00:00",
+      "status": "Open",
+      "grade_item_id": 13
+    },
+    {
+      "id": 4,
+      "offering_id": 3,
+      "title": "Quiz 4",
+      "questions": 10,
+      "minutes": 20,
+      "opens_at": "2026-10-28T09:00:00",
+      "closes_at": "2026-10-30T23:59:00",
+      "status": "Open",
+      "grade_item_id": 0
+    },
+    {
+      "id": 5,
+      "offering_id": 6,
+      "title": "Quiz 1: Logic Gates",
+      "questions": 10,
+      "minutes": 20,
+      "opens_at": "2026-10-12T09:00:00",
+      "closes_at": "2026-10-14T23:59:00",
+      "status": "Closed",
+      "grade_item_id": 14
+    },
+    {
+      "id": 6,
+      "offering_id": 2,
+      "title": "Quiz 3: Graphs",
+      "questions": 6,
+      "minutes": 30,
+      "opens_at": "2026-10-19T09:00:00",
+      "closes_at": "2026-10-21T23:59:00",
+      "status": "Closed",
+      "grade_item_id": 16
+    },
+    {
+      "id": 7,
+      "offering_id": 3,
+      "title": "Quiz 3",
+      "questions": 10,
+      "minutes": 20,
+      "opens_at": "2026-10-19T09:00:00",
+      "closes_at": "2026-10-21T23:59:00",
+      "status": "Closed",
+      "grade_item_id": 17
+    }
+  ],
+  "alerts": [
+    {
+      "id": 1,
+      "user_id": 3,
+      "icon": "warn",
+      "title": "3 Students At-Risk",
+      "body": "CS 201 · missed 3+ sessions and below 60% on recent quizzes.",
+      "action": "Review students",
+      "page": "students",
+      "created_at": "2026-10-30T15:20:00",
+      "unread": true
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "icon": "spark",
+      "title": "New AI Threads from students",
+      "body": "7 threads flagged for instructor input in CS 340 study assistant.",
+      "action": "Open threads",
+      "page": "inbox",
+      "created_at": "2026-10-30T14:30:00",
+      "unread": true
+    },
+    {
+      "id": 3,
+      "user_id": 3,
+      "icon": "clock",
+      "title": "Quiz 4 closes tonight",
+      "body": "CS 112 · 3 of 5 submitted so far.",
+      "action": "Extend deadline",
+      "page": "quizzes",
+      "created_at": "2026-10-30T12:30:00",
+      "unread": false
+    },
+    {
+      "id": 4,
+      "user_id": 3,
+      "icon": "inbox",
+      "title": "Regrade request",
+      "body": "Layla H. requested a regrade on Quiz 1 (CS 201).",
+      "action": "View request",
+      "page": "inbox",
+      "created_at": "2026-10-29T10:00:00",
+      "unread": false
+    }
+  ],
+  "audit_events": [
+    {
+      "id": 1,
+      "actor_user_id": 3,
+      "target_type": "student_grade",
+      "target_id": 4,
+      "action": "Grade Modified",
+      "kind": "update",
+      "target_label": "Layla Haddad · CS 201 Quiz 1",
+      "ip": "10.4.12.88",
+      "before_json": {
+        "score": 72,
+        "letter": "C",
+        "status": "Published",
+        "comment": "Partial credit on Q4",
+        "last_edited_by": "Auto-grader"
+      },
+      "after_json": {
+        "score": 84,
+        "letter": "B",
+        "status": "Published",
+        "comment": "Regrade approved — Q4 full credit",
+        "last_edited_by": "Dr. Alan Reyes"
+      },
+      "created_at": "2026-10-30T10:42:18"
+    },
+    {
+      "id": 2,
+      "actor_user_id": 1,
+      "target_type": "user",
+      "target_id": 11,
+      "action": "Role Changed",
+      "kind": "security",
+      "target_label": "Yusuf Demir",
+      "ip": "10.4.1.5",
+      "before_json": {
+        "role": "Student",
+        "permissions": "read:courses",
+        "department": "Computer Science",
+        "mfa_required": false
+      },
+      "after_json": {
+        "role": "Teaching Assistant",
+        "permissions": "read:courses, grade:assignments",
+        "department": "Computer Science",
+        "mfa_required": true
+      },
+      "created_at": "2026-10-30T09:58:03"
+    },
+    {
+      "id": 3,
+      "actor_user_id": 0,
+      "target_type": "enrollment",
+      "target_id": 12,
+      "action": "Enrollment Created",
+      "kind": "create",
+      "target_label": "MATH 240 · Section A",
+      "ip": "—",
+      "before_json": null,
+      "after_json": {
+        "student": "Sara Mansour",
+        "course": "MATH 240",
+        "section": "A",
+        "status": "Active",
+        "source": "Waitlist promotion"
+      },
+      "created_at": "2026-10-30T08:21:47"
+    },
+    {
+      "id": 4,
+      "actor_user_id": 1,
+      "target_type": "user",
+      "target_id": 13,
+      "action": "Users Imported",
+      "kind": "create",
+      "target_label": "312 users · fall_roster.xlsx",
+      "ip": "10.4.1.5",
+      "before_json": null,
+      "after_json": {
+        "file": "fall_roster.xlsx",
+        "rows": 312,
+        "students": 298,
+        "doctors": 14
+      },
+      "created_at": "2026-10-28T14:10:00"
+    },
+    {
+      "id": 5,
+      "actor_user_id": 2,
+      "target_type": "enrollment",
+      "target_id": 1,
+      "action": "Students Enrolled",
+      "kind": "create",
+      "target_label": "CS 201 · Section B",
+      "ip": "10.4.1.9",
+      "before_json": null,
+      "after_json": {
+        "course": "CS 201",
+        "section": "B",
+        "students": 58,
+        "doctor": "Dr. Hana Yamada"
+      },
+      "created_at": "2026-10-27T11:20:00"
+    },
+    {
+      "id": 6,
+      "actor_user_id": 4,
+      "target_type": "assignment",
+      "target_id": 5,
+      "action": "Deadline Extended",
+      "kind": "update",
+      "target_label": "MATH 240 · Problem Set 3",
+      "ip": "10.4.9.31",
+      "before_json": {
+        "due_date": "2026-11-06 23:59",
+        "late_penalty": "10% / day",
+        "visibility": "Published",
+        "max_points": 20
+      },
+      "after_json": {
+        "due_date": "2026-11-09 23:59",
+        "late_penalty": "5% / day",
+        "visibility": "Published",
+        "max_points": 20
+      },
+      "created_at": "2026-10-26T17:05:12"
+    },
+    {
+      "id": 7,
+      "actor_user_id": 1,
+      "target_type": "room",
+      "target_id": 5,
+      "action": "Room Added",
+      "kind": "create",
+      "target_label": "Hall B-204",
+      "ip": "10.4.1.5",
+      "before_json": null,
+      "after_json": {
+        "name": "Hall B-204",
+        "capacity": 80,
+        "building": "Engineering B",
+        "network_mode": "router"
+      },
+      "created_at": "2026-10-25T09:40:00"
+    },
+    {
+      "id": 8,
+      "actor_user_id": 1,
+      "target_type": "room",
+      "target_id": 7,
+      "action": "Room Deleted",
+      "kind": "delete",
+      "target_label": "Hall C-104",
+      "ip": "10.4.1.5",
+      "before_json": {
+        "name": "Hall C-104",
+        "capacity": 80,
+        "building": "Engineering C",
+        "qr_enabled": true
+      },
+      "after_json": null,
+      "created_at": "2026-10-24T15:40:29"
+    },
+    {
+      "id": 9,
+      "actor_user_id": 9,
+      "target_type": "user",
+      "target_id": 9,
+      "action": "Password Reset",
+      "kind": "security",
+      "target_label": "Layla Haddad",
+      "ip": "172.16.4.22",
+      "before_json": {
+        "password": "••••••••",
+        "sessions_active": 3,
+        "mfa_enabled": false
+      },
+      "after_json": {
+        "password": "•••••••• (rotated)",
+        "sessions_active": 0,
+        "mfa_enabled": true
+      },
+      "created_at": "2026-10-24T11:12:54"
+    },
+    {
+      "id": 10,
+      "actor_user_id": 3,
+      "target_type": "attendance_record",
+      "target_id": 9,
+      "action": "Attendance Overridden",
+      "kind": "update",
+      "target_label": "CS 201 · Session 2",
+      "ip": "10.4.12.88",
+      "before_json": {
+        "student": "Omar Khalil",
+        "status": "Absent",
+        "method": "QR scan",
+        "note": null
+      },
+      "after_json": {
+        "student": "Omar Khalil",
+        "status": "Present",
+        "method": "Manual override",
+        "note": "Scanner outage in room B-114"
+      },
+      "created_at": "2026-10-22T10:03:41"
+    },
+    {
+      "id": 11,
+      "actor_user_id": 0,
+      "target_type": "term",
+      "target_id": 1,
+      "action": "Term Activated",
+      "kind": "update",
+      "target_label": "Fall 2026",
+      "ip": "—",
+      "before_json": {
+        "status": "Scheduled"
+      },
+      "after_json": {
+        "status": "Active"
+      },
+      "created_at": "2026-09-14T08:00:00"
+    }
+  ],
+  "sample_roster": [
+    {
+      "id": 1,
+      "full_name": "Rami Fawzi",
+      "email": "rami.fawzi@edusync.edu",
+      "role": "student",
+      "university_id": "20230502"
+    },
+    {
+      "id": 2,
+      "full_name": "Hala Nabil",
+      "email": "hala.nabil@edusync.edu",
+      "role": "student",
+      "university_id": "20230511"
+    },
+    {
+      "id": 3,
+      "full_name": "Dr. Tarek Saad",
+      "email": "t.saad@edusync.edu",
+      "role": "doctor",
+      "university_id": "FAC-2088"
+    },
+    {
+      "id": 4,
+      "full_name": "Dina Samir",
+      "email": "dina.samir@edusync.edu",
+      "role": "student",
+      "university_id": "20230519"
+    },
+    {
+      "id": 5,
+      "full_name": "Youssef Adel",
+      "email": "youssef.adel@edusync.edu",
+      "role": "student",
+      "university_id": "20230524"
+    }
+  ]
+}

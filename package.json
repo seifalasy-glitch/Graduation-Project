@@ -1,10 +1,44 @@
 {
-  "scripts": {
-    "setup": "cd myapp2 && npm install",
-    "server": "cd myapp2 && npm run server",
-    "start": "cd myapp2 && npm start"
-  },
+  "name": "edusync",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "axios": "^1.20.0"
+    "axios": "^1.20.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "json-server": "0.17.4",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "server": "json-server mock-data/db.json --port 3001",
+    "build": "react-scripts build"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "overrides": {
+    "react-scripts": {
+      "typescript": "^5.9.3"
+    }
   }
 }
