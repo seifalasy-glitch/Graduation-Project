@@ -1,0 +1,232 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  padding: 20px 12px;
+  background-color: #ffffff;
+  border-right: 1px solid #efefed;
+  overflow-y: auto;
+}
+
+.sidebar.doctor,
+.sidebar.student {
+  background-color: #fbfbfa;
+}
+
+.side-logo {
+  position: relative;
+  padding: 0 8px;
+  line-height: 28px;
+}
+
+.side-logo-box {
+  display: inline-block;
+  vertical-align: middle;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  border-radius: 8px;
+  background-color: #7f56d9;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.side-logo-text {
+  vertical-align: middle;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.side-badge {
+  position: absolute;
+  right: 8px;
+  top: 5px;
+  line-height: 14px;
+  padding: 2px 6px;
+  border: 1px solid #e9e9e7;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #787774;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sidebar.doctor .side-logo,
+.sidebar.student .side-logo {
+  margin-bottom: 24px;
+  line-height: 24px;
+}
+
+.sidebar.doctor .side-logo-box,
+.sidebar.student .side-logo-box {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  border-radius: 6px;
+  background-color: #1f2328;
+  font-size: 11px;
+}
+
+.sidebar.doctor .side-logo-text,
+.sidebar.student .side-logo-text {
+  font-size: 14px;
+}
+
+.sidebar.doctor .side-badge,
+.sidebar.student .side-badge {
+  top: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.side-section {
+  margin-top: 32px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9b9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.side-menu {
+  list-style-type: none;
+  margin: 8px 0 0 0;
+  padding: 0;
+}
+
+.side-item,
+.side-logout {
+  display: block;
+  width: 100%;
+  margin-bottom: 2px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  text-align: left;
+  font-size: 14px;
+  color: #5f5e5b;
+}
+
+.side-item:hover,
+.side-logout:hover {
+  background-color: #f7f7f5;
+}
+
+.side-item.active {
+  background-color: #f4f0ff;
+  color: #6941c6;
+  font-weight: 500;
+}
+
+.sidebar.doctor .side-item,
+.sidebar.student .side-item {
+  border-radius: 6px;
+}
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.side-item-label {
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.side-footer {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #efefed;
+}
+
+.side-avatar {
+  display: inline-block;
+  vertical-align: middle;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background-color: #f1f1ef;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.side-user {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 10px;
+  font-size: 13px;
+}
+
+.side-user-name {
+  font-weight: 500;
+}
+
+.side-user-sub {
+  color: #9b9a97;
+}
+
+.side-logout {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #787774;
+}
+
+.sidebar.doctor .side-footer,
+.sidebar.student .side-footer {
+  border-top: none;
+}
+
+.sidebar.doctor .side-avatar,
+.sidebar.student .side-avatar {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+}
+
+.side-extra-label {
+  margin-top: 32px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #a3a29e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.side-extra-item {
+  margin-top: 2px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #5f5e5b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.side-extra-item:hover {
+  background-color: #f7f7f5;
+}
+
+.side-extra-emoji {
+  font-size: 12px;
+  margin-right: 8px;
+}

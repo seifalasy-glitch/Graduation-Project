@@ -1,0 +1,40 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 14px;
+  color: #37352f;
+  background-color: #ffffff;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: "Inter", Arial, sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 40px;
+}
