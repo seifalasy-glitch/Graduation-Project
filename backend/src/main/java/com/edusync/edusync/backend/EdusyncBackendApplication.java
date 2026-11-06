@@ -1,4 +1,4 @@
-package com.edusync.edusync_backend;
+package com.edusync.edusync.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
