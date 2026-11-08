@@ -4,8 +4,10 @@ import {
   Alert,
   Assignment,
   AssignmentInfo,
+  AttendanceChange,
   AttendanceRecord,
   AttendanceSession,
+  CourseMaterial,
   GradeItem,
   Quiz,
   QrChallenge,
@@ -62,6 +64,25 @@ export async function getSessions() {
   return response.data;
 }
 
+export async function addSession(session: Omit<AttendanceSession, "id">) {
+  const response = await axios.post<AttendanceSession>(
+    `${API_URL}/attendance_sessions`,
+    session,
+  );
+  return response.data;
+}
+
+export async function updateSession(
+  id: number,
+  changes: Partial<AttendanceSession>,
+) {
+  const response = await axios.patch<AttendanceSession>(
+    `${API_URL}/attendance_sessions/${id}`,
+    changes,
+  );
+  return response.data;
+}
+
 export async function getRecords() {
   const response = await axios.get<AttendanceRecord[]>(
     `${API_URL}/attendance_records`,
@@ -77,9 +98,66 @@ export async function addRecord(record: Omit<AttendanceRecord, "id">) {
   return response.data;
 }
 
+export async function getMaterials(offeringId: number) {
+  const response = await axios.get<CourseMaterial[]>(
+    `${API_URL}/course_materials`,
+    { params: { offering_id: offeringId } },
+  );
+  return response.data;
+}
+
+export async function addMaterial(material: Omit<CourseMaterial, "id">) {
+  const response = await axios.post<CourseMaterial>(
+    `${API_URL}/course_materials`,
+    material,
+  );
+  return response.data;
+}
+
+export async function updateMaterial(
+  id: number,
+  changes: Partial<CourseMaterial>,
+) {
+  const response = await axios.patch<CourseMaterial>(
+    `${API_URL}/course_materials/${id}`,
+    changes,
+  );
+  return response.data;
+}
+
+export async function deleteMaterial(id: number) {
+  await axios.delete(`${API_URL}/course_materials/${id}`);
+}
+
+export async function getSessionRecords(sessionId: number) {
+  const response = await axios.get<AttendanceRecord[]>(
+    `${API_URL}/attendance_records`,
+    { params: { session_id: sessionId } },
+  );
+  return response.data;
+}
+
 export async function getQrChallenges(sessionId: number) {
   const response = await axios.get<QrChallenge[]>(`${API_URL}/qr_challenges`, {
     params: { session_id: sessionId },
   });
+  return response.data;
+}
+
+export async function addQrChallenge(challenge: Omit<QrChallenge, "id">) {
+  const response = await axios.post<QrChallenge>(
+    `${API_URL}/qr_challenges`,
+    challenge,
+  );
+  return response.data;
+}
+
+export async function addAttendanceChange(
+  change: Omit<AttendanceChange, "id">,
+) {
+  const response = await axios.post<AttendanceChange>(
+    `${API_URL}/attendance_changes`,
+    change,
+  );
   return response.data;
 }

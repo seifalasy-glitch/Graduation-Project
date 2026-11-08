@@ -6,8 +6,12 @@ import Settings from "../Shared_components/Settings";
 import ComingSoon from "../Shared_components/ComingSoon";
 import AdminHome from "./AdminHome";
 import AdminUsers from "./AdminUsers";
+import AdminEnrollments from "./AdminEnrollments";
 import AdminTerms from "./AdminTerms";
 import AdminPrograms from "./AdminPrograms";
+import AdminRooms from "./AdminRooms";
+import AdminAuditLogs from "./AdminAuditLogs";
+import AdminHelpdesk from "./AdminHelpdesk";
 import { MenuItem, User } from "../../types";
 
 const menuItems: MenuItem[] = [
@@ -22,7 +26,17 @@ const menuItems: MenuItem[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const builtPages = ["home", "users", "terms", "programs", "settings"];
+const builtPages = [
+  "home",
+  "users",
+  "enrollments",
+  "terms",
+  "programs",
+  "rooms",
+  "audit",
+  "helpdesk",
+  "settings",
+];
 
 type AdminDashboardProps = {
   user: User;
@@ -70,8 +84,12 @@ function AdminDashboard({ user, onUserChange, onLogout }: AdminDashboardProps) {
           <div className="page">
             {page === "home" && <AdminHome user={user} onNavigate={setPage} />}
             {page === "users" && <AdminUsers />}
+            {page === "enrollments" && <AdminEnrollments />}
             {page === "terms" && <AdminTerms />}
             {page === "programs" && <AdminPrograms />}
+            {page === "rooms" && <AdminRooms />}
+            {page === "audit" && <AdminAuditLogs />}
+            {page === "helpdesk" && <AdminHelpdesk />}
             {!builtPages.includes(page) && (
               <ComingSoon title={currentLabel} onBack={() => setPage("home")} />
             )}

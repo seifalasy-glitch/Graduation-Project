@@ -3,14 +3,65 @@ import "./AdminUsers.css";
 import PageHead from "../Shared_components/PageHead";
 import Toast from "../Shared_components/Toast";
 import Icon from "../Shared_components/Icon";
-import {
-  addAuditEvent,
-  addUser,
-  getSampleRoster,
-  getUsers,
-} from "../../academicApi";
-import { Role, RosterRow, User } from "../../types";
+import { addAuditEvent, addUser, getUsers } from "../../academicApi";
+import { Role, User } from "../../types";
 import { shortDate } from "../../format";
+
+const errorsLog = [
+  { row: 5, col: "Email", value: "omar.k@uni", issue: "Invalid Email Format" },
+  {
+    row: 9,
+    col: "Role",
+    value: "Profesor",
+    issue: "Unknown role (expected Student, Doctor, Admin)",
+  },
+  { row: 14, col: "Student ID", value: "—", issue: "Required field is empty" },
+  {
+    row: 22,
+    col: "Email",
+    value: "layla@edusync.edu",
+    issue: "Duplicate email already in database",
+  },
+  {
+    row: 31,
+    col: "Student ID",
+    value: "2023-0A41",
+    issue: "ID must be 8 digits",
+  },
+];
+
+const preview: { name: string; email: string; role: Role; id: string }[] = [
+  {
+    name: "Rami Fawzi",
+    email: "rami.fawzi@edusync.edu",
+    role: "student",
+    id: "20230502",
+  },
+  {
+    name: "Hala Nabil",
+    email: "hala.nabil@edusync.edu",
+    role: "student",
+    id: "20230511",
+  },
+  {
+    name: "Dr. Tarek Saad",
+    email: "t.saad@edusync.edu",
+    role: "doctor",
+    id: "FAC-2088",
+  },
+  {
+    name: "Dina Samir",
+    email: "dina.samir@edusync.edu",
+    role: "student",
+    id: "20230519",
+  },
+  {
+    name: "Youssef Adel",
+    email: "youssef.adel@edusync.edu",
+    role: "student",
+    id: "20230524",
+  },
+];
 
 const roleNames: Record<Role, string> = {
   student: "Student",
@@ -25,7 +76,6 @@ function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [users, setUsers] = useState<User[]>([]);
-  const [roster, setRoster] = useState<RosterRow[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -39,17 +89,14 @@ function AdminUsers() {
     loadUsers();
   }, []);
 
-  // The file itself is not read (ASSUMPTION A21): we keep its name and show
-  // the rows from sample_roster in mock-data/db.json as if they came from it.
-  async function loadFile(name: string) {
+  function loadFile(name: string) {
     setFileName(name);
     setToast("");
-    setError("");
-    try {
-      setRoster(await getSampleRoster());
-      setStage("uploaded");
-    } catch (err) {
-      setError("Can't load the sample rows. Did you run: npm run server ?");
+    const lower = name.toLowerCase();
+    if (lower.includes("error") || lower.includes("bad")) {
+      setStage("errors");
+    } else {
+      setStage("valid");
     }
   }
 
@@ -77,12 +124,12 @@ function AdminUsers() {
     setSaving(true);
     try {
       const added: User[] = [];
-      for (const row of roster) {
+      for (const row of preview) {
         const saved = await addUser({
-          university_id: row.university_id,
+          university_id: row.id,
           email: row.email,
           role: row.role,
-          name: row.full_name,
+          name: row.name,
           password: "123456",
           must_change_password: true,
           department: row.role === "doctor" ? "Computer Science" : "Student",
@@ -168,30 +215,88 @@ function AdminUsers() {
                 />
               </label>
               <p className="users-samples">
-                No file at hand?
+                Try a sample:
                 <button
                   className="users-sample"
                   onClick={() => loadFile("fall_roster_2026.xlsx")}
                 >
-                  Use sample file
+                  Valid file
+                </button>
+                <button
+                  className="users-sample"
+                  onClick={() => loadFile("roster_with_errors.xlsx")}
+                >
+                  File with errors
                 </button>
               </p>
             </div>
           )}
 
-          {stage === "uploaded" && (
+          {stage === "errors" && (
+            <div>
+              <div className="users-alert">
+                <Icon name="alert" />
+                <span className="users-alert-text">
+                  <b>
+                    {fileName} has {errorsLog.length} validation errors
+                  </b>
+                  <span className="users-alert-sub">
+                    Fix the rows below in your spreadsheet and re-upload. No
+                    users were saved.
+                  </span>
+                </span>
+              </div>
+              <h3 className="users-h3">Validation Errors</h3>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Column</th>
+                      <th>Value</th>
+                      <th>Issue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {errorsLog.map((row) => (
+                      <tr key={row.row}>
+                        <td className="users-strong">Row {row.row}</td>
+                        <td className="muted">{row.col}</td>
+                        <td>
+                          <code className="users-code">{row.value}</code>
+                        </td>
+                        <td className="users-issue">{row.issue}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="users-actions">
+                <button className="btn-ghost" onClick={reset}>
+                  Cancel
+                </button>
+                <button className="btn-primary" onClick={reset}>
+                  <Icon name="refresh" />
+                  Re-upload
+                </button>
+              </div>
+            </div>
+          )}
+
+          {stage === "valid" && (
             <div>
               <div className="users-ok">
                 <Icon name="check" />
                 <span className="users-alert-text">
-                  <b>{fileName}</b> uploaded · {roster.length} rows ready
+                  <b>{fileName}</b> passed validation · {preview.length} rows
+                  ready
                 </span>
                 <button className="users-replace" onClick={reset}>
                   Replace file
                 </button>
               </div>
               <h3 className="users-h3">
-                Preview <span className="subtle">· {roster.length} rows</span>
+                Preview <span className="subtle">· {preview.length} rows</span>
               </h3>
               <div className="table-wrap">
                 <table className="table">
@@ -204,16 +309,16 @@ function AdminUsers() {
                     </tr>
                   </thead>
                   <tbody>
-                    {roster.map((row) => (
-                      <tr key={row.id}>
-                        <td className="users-strong">{row.full_name}</td>
+                    {preview.map((row) => (
+                      <tr key={row.email}>
+                        <td className="users-strong">{row.name}</td>
                         <td className="muted">{row.email}</td>
                         <td>
                           <span className={"users-role " + row.role}>
                             {roleNames[row.role]}
                           </span>
                         </td>
-                        <td className="muted">{row.university_id}</td>
+                        <td className="muted">{row.id}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,0 +1,238 @@
+.enroll-gap {
+  margin-top: 24px;
+}
+
+.enroll-layout {
+  margin-top: 32px;
+}
+
+.enroll-main {
+  display: inline-block;
+  vertical-align: top;
+  width: 69%;
+}
+
+.enroll-block {
+  margin-top: 32px;
+}
+
+.enroll-doctor {
+  position: relative;
+  padding: 10px 12px;
+  border: 1px solid #e9e9e7;
+  border-radius: 8px;
+}
+
+.enroll-doctor-avatar {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 50%;
+  background-color: #f9f5ff;
+  color: #6941c6;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.enroll-doctor-name {
+  margin-left: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.enroll-change {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 13px;
+  color: #787774;
+}
+
+.enroll-search-box {
+  position: relative;
+}
+
+.enroll-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  color: #9b9a97;
+}
+
+.enroll-search-input {
+  padding-left: 36px;
+}
+
+.enroll-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46px;
+  margin: 0;
+  padding: 4px 0;
+  border: 1px solid #efefed;
+  border-radius: 8px;
+  background-color: #ffffff;
+  list-style-type: none;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+  z-index: 10;
+}
+
+.enroll-dropdown-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background-color: transparent;
+  text-align: left;
+  font-size: 14px;
+  color: #37352f;
+}
+
+.enroll-dropdown-item:hover {
+  background-color: #f7f7f5;
+}
+
+.enroll-dropdown-dept {
+  position: absolute;
+  right: 12px;
+  font-size: 12px;
+  color: #9b9a97;
+}
+
+.enroll-dropdown-empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #9b9a97;
+}
+
+.enroll-students {
+  border: 1px solid #e9e9e7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.enroll-students-bar {
+  position: relative;
+  padding: 8px 12px;
+  border-bottom: 1px solid #efefed;
+}
+
+.enroll-students-input {
+  width: 70%;
+  margin-left: 8px;
+  padding: 4px 0;
+  border: none;
+  outline: none;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.enroll-select-all {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6941c6;
+}
+
+.enroll-students-list {
+  max-height: 288px;
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  overflow-y: auto;
+}
+
+.enroll-student {
+  position: relative;
+  display: block;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f5f5f4;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.enroll-student:hover {
+  background-color: #fcfcfb;
+}
+
+.enroll-student.on {
+  background-color: #fcfaff;
+}
+
+.enroll-student-name {
+  margin-left: 12px;
+  vertical-align: middle;
+}
+
+.enroll-student-id {
+  position: absolute;
+  right: 12px;
+  font-size: 13px;
+  color: #9b9a97;
+}
+
+.enroll-summary {
+  display: inline-block;
+  vertical-align: top;
+  width: 28%;
+  margin-left: 3%;
+  padding: 20px;
+}
+
+.enroll-summary-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9b9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.enroll-summary-label {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #9b9a97;
+}
+
+.enroll-summary-value {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.enroll-capacity {
+  font-weight: 400;
+  color: #9b9a97;
+}
+
+.enroll-progress {
+  margin-top: 8px;
+}
+
+.enroll-full {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.enroll-full:first-of-type {
+  margin-top: 24px;
+}
+
+.enroll-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #9b9a97;
+}

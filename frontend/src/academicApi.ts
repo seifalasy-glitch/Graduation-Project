@@ -9,7 +9,6 @@ import {
   Enrollment,
   GroupMembership,
   Room,
-  RosterRow,
   StudentGroup,
   TeachingAssignment,
   User,
@@ -20,6 +19,11 @@ export async function getUsers() {
   const users = await axios.get<UserRow[]>(`${API_URL}/users`);
   const roles = await axios.get<UserRole[]>(`${API_URL}/user_roles`);
   return users.data.map((row) => addRole(row, roles.data));
+}
+
+export async function getUsersByRole(role: string) {
+  const users = await getUsers();
+  return users.filter((user) => user.role === role);
 }
 
 export async function addUser(user: Omit<User, "id">) {
@@ -103,6 +107,16 @@ export async function getTeachingAssignments() {
   return response.data;
 }
 
+export async function addTeachingAssignment(
+  assignment: Omit<TeachingAssignment, "id">,
+) {
+  const response = await axios.post<TeachingAssignment>(
+    `${API_URL}/teaching_assignments`,
+    assignment,
+  );
+  return response.data;
+}
+
 export async function getEnrollments() {
   const response = await axios.get<Enrollment[]>(`${API_URL}/enrollments`);
   return response.data;
@@ -115,6 +129,14 @@ export async function getStudentEnrollments(studentId: number) {
   return response.data;
 }
 
+export async function addEnrollment(enrollment: Omit<Enrollment, "id">) {
+  const response = await axios.post<Enrollment>(
+    `${API_URL}/enrollments`,
+    enrollment,
+  );
+  return response.data;
+}
+
 export async function getMemberships() {
   const response = await axios.get<GroupMembership[]>(
     `${API_URL}/group_memberships`,
@@ -122,8 +144,21 @@ export async function getMemberships() {
   return response.data;
 }
 
+export async function addMembership(membership: Omit<GroupMembership, "id">) {
+  const response = await axios.post<GroupMembership>(
+    `${API_URL}/group_memberships`,
+    membership,
+  );
+  return response.data;
+}
+
 export async function getRooms() {
   const response = await axios.get<Room[]>(`${API_URL}/rooms`);
+  return response.data;
+}
+
+export async function addRoom(room: Omit<Room, "id">) {
+  const response = await axios.post<Room>(`${API_URL}/rooms`, room);
   return response.data;
 }
 
@@ -150,7 +185,14 @@ export async function addOffering(offering: Omit<CourseOffering, "id">) {
   return response.data;
 }
 
-export async function getSampleRoster() {
-  const response = await axios.get<RosterRow[]>(`${API_URL}/sample_roster`);
+export async function addGroup(group: Omit<StudentGroup, "id">) {
+  const response = await axios.post<StudentGroup>(
+    `${API_URL}/student_groups`,
+    group,
+  );
   return response.data;
+}
+
+export async function deleteMembership(id: number) {
+  await axios.delete(`${API_URL}/group_memberships/${id}`);
 }
