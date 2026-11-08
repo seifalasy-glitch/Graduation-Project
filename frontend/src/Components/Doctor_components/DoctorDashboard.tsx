@@ -5,6 +5,8 @@ import TopBar from "../Shared_components/TopBar";
 import Settings from "../Shared_components/Settings";
 import ComingSoon from "../Shared_components/ComingSoon";
 import DoctorHome from "./DoctorHome";
+import DoctorCourses from "./DoctorCourses";
+import AttendanceLive from "./AttendanceLive";
 import {
   getCourses,
   getGroups,
@@ -31,7 +33,7 @@ const menuItems: MenuItem[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const builtPages = ["home", "settings"];
+const builtPages = ["home", "courses", "attendance", "settings"];
 
 type DoctorDashboardProps = {
   user: User;
@@ -67,6 +69,10 @@ function DoctorDashboard({
   let currentLabel = "Live Attendance";
   if (currentItem !== undefined) {
     currentLabel = currentItem.label;
+  }
+
+  if (page === "attendance") {
+    return <AttendanceLive user={user} onExit={() => setPage("home")} />;
   }
 
   return (
@@ -108,6 +114,9 @@ function DoctorDashboard({
         )}
 
         {page === "home" && <DoctorHome user={user} onNavigate={setPage} />}
+        {page === "courses" && (
+          <DoctorCourses user={user} onNavigate={setPage} />
+        )}
         {!builtPages.includes(page) && (
           <div className="page">
             <ComingSoon title={currentLabel} onBack={() => setPage("home")} />

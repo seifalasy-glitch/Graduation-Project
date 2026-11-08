@@ -26,7 +26,7 @@
       "id": 3,
       "university_id": "FAC-2041",
       "email": "alan.reyes@edusync.edu",
-      "name": "Dr. Alan Reyes",
+      "name": "Dr.ash",
       "password": "123456",
       "must_change_password": false,
       "department": "Computer Science",
@@ -81,7 +81,7 @@
       "id": 8,
       "university_id": "20230401",
       "email": "maya.chen@edusync.edu",
-      "name": "Maya Chen",
+      "name": "asdf",
       "password": "123456",
       "must_change_password": false,
       "department": "B.Sc. Computer Science",
@@ -208,6 +208,61 @@
       "department": "B.Sc. Computer Science",
       "active": false,
       "created_at": "2026-10-28T09:00:00"
+    },
+    {
+      "university_id": "20230502",
+      "email": "rami.fawzi@edusync.edu",
+      "created_at": "2026-11-08T00:56:15.918Z",
+      "name": "Rami Fawzi",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "Student",
+      "active": false,
+      "id": 20
+    },
+    {
+      "university_id": "20230511",
+      "email": "hala.nabil@edusync.edu",
+      "created_at": "2026-11-08T00:56:15.986Z",
+      "name": "Hala Nabil",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "Student",
+      "active": false,
+      "id": 21
+    },
+    {
+      "university_id": "FAC-2088",
+      "email": "t.saad@edusync.edu",
+      "created_at": "2026-11-08T00:56:16.049Z",
+      "name": "Dr. Tarek Saad",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "Computer Science",
+      "active": false,
+      "id": 22
+    },
+    {
+      "university_id": "20230519",
+      "email": "dina.samir@edusync.edu",
+      "created_at": "2026-11-08T00:56:16.095Z",
+      "name": "Dina Samir",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "Student",
+      "active": false,
+      "id": 23
+    },
+    {
+      "university_id": "20230524",
+      "email": "youssef.adel@edusync.edu",
+      "created_at": "2026-11-08T00:56:16.159Z",
+      "name": "Youssef Adel",
+      "password": "123456",
+      "must_change_password": true,
+      "department": "Student",
+      "active": false,
+      "id": 24
     }
   ],
   "user_roles": [
@@ -305,6 +360,31 @@
       "id": 19,
       "user_id": 19,
       "role": "student"
+    },
+    {
+      "user_id": 20,
+      "role": "student",
+      "id": 20
+    },
+    {
+      "user_id": 21,
+      "role": "student",
+      "id": 21
+    },
+    {
+      "user_id": 22,
+      "role": "doctor",
+      "id": 22
+    },
+    {
+      "user_id": 23,
+      "role": "student",
+      "id": 23
+    },
+    {
+      "user_id": 24,
+      "role": "student",
+      "id": 24
     }
   ],
   "academic_programs": [
@@ -381,6 +461,16 @@
       "add_drop_end": "2026-02-23",
       "exams_start": "2026-05-16",
       "status": "Archived"
+    },
+    {
+      "academic_year": "2026/2027",
+      "term_type": "fall",
+      "start_date": "2026-11-08",
+      "end_date": "2026-11-14",
+      "add_drop_end": "2026-11-08",
+      "exams_start": "2026-11-14",
+      "status": "Scheduled",
+      "id": 4
     }
   ],
   "rooms": [
@@ -775,6 +865,20 @@
       "room_id": 3,
       "emoji": "🤖",
       "syllabus_progress": 0
+    },
+    {
+      "course_id": 9,
+      "term_id": 4,
+      "section": "A",
+      "capacity": 60,
+      "coursework_max": 40,
+      "days": [],
+      "start_hour": 0,
+      "end_hour": 0,
+      "room_id": 0,
+      "emoji": "📘",
+      "syllabus_progress": 0,
+      "id": 10
     }
   ],
   "student_groups": [
@@ -896,6 +1000,13 @@
       "doctor_user_id": 6,
       "starts_at": "2026-09-14",
       "ends_at": "2026-12-24"
+    },
+    {
+      "group_id": 1,
+      "doctor_user_id": 4,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24",
+      "id": 10
     }
   ],
   "enrollments": [
@@ -1094,6 +1205,20 @@
       "offering_id": 7,
       "program_id": 1,
       "status": "active"
+    },
+    {
+      "student_user_id": 8,
+      "offering_id": 2,
+      "program_id": 1,
+      "status": "active",
+      "id": 29
+    },
+    {
+      "student_user_id": 19,
+      "offering_id": 1,
+      "program_id": 1,
+      "status": "active",
+      "id": 30
     }
   ],
   "group_memberships": [
@@ -1313,6 +1438,27 @@
       "group_id": 9,
       "starts_at": "2026-09-14",
       "ends_at": "2026-12-24"
+    },
+    {
+      "enrollment_id": 29,
+      "group_id": 4,
+      "starts_at": "2026-11-08",
+      "ends_at": "2026-12-24",
+      "id": 32
+    },
+    {
+      "enrollment_id": 30,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24",
+      "id": 33
+    },
+    {
+      "enrollment_id": 10,
+      "group_id": 1,
+      "starts_at": "2026-09-14",
+      "ends_at": "2026-12-24",
+      "id": 34
     }
   ],
   "attendance_sessions": [
@@ -1405,6 +1551,16 @@
       "starts_at": "2026-10-29T09:00:00",
       "ends_at": "2026-10-29T10:30:00",
       "state": "closed"
+    },
+    {
+      "group_id": 1,
+      "room_id": 1,
+      "teaching_assignment_id": 1,
+      "method": "router",
+      "starts_at": "2026-11-01T08:22:40.066Z",
+      "ends_at": "2026-11-01T08:23:14.301Z",
+      "state": "closed",
+      "id": 10
     }
   ],
   "qr_challenges": [
@@ -1461,6 +1617,86 @@
       "session_id": 9,
       "token_hash": "mock-9-1029",
       "expires_at": "2026-10-29T09:15:00"
+    },
+    {
+      "session_id": 10,
+      "token_hash": "mock-10-0",
+      "expires_at": "2026-11-01T08:22:55.066Z",
+      "id": 10
+    },
+    {
+      "session_id": 10,
+      "token_hash": "mock-10-1",
+      "expires_at": "2026-11-01T08:23:05.266Z",
+      "id": 11
+    },
+    {
+      "session_id": 10,
+      "token_hash": "mock-10-2",
+      "expires_at": "2026-11-01T08:23:15.252Z",
+      "id": 12
+    },
+    {
+      "session_id": 10,
+      "token_hash": "mock-10-3",
+      "expires_at": "2026-11-01T08:23:25.236Z",
+      "id": 13
+    }
+  ],
+  "attendance_changes": [
+    {
+      "record_id": 37,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:54.104Z",
+      "id": 1
+    },
+    {
+      "record_id": 38,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:55.048Z",
+      "id": 2
+    },
+    {
+      "record_id": 39,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:55.450Z",
+      "id": 3
+    },
+    {
+      "record_id": 40,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:55.681Z",
+      "id": 4
+    },
+    {
+      "record_id": 41,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:55.947Z",
+      "id": 5
+    },
+    {
+      "record_id": 42,
+      "doctor_user_id": 3,
+      "old_status": "absent",
+      "new_status": "present",
+      "reason_code": "manual_override",
+      "changed_at": "2026-11-01T08:22:56.226Z",
+      "id": 6
     }
   ],
   "attendance_records": [
@@ -1751,6 +1987,54 @@
       "status": "present",
       "method": "qr",
       "marked_at": "2026-10-29T09:00:00"
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 1,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:54.060Z",
+      "id": 37
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 2,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:55.010Z",
+      "id": 38
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 3,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:55.409Z",
+      "id": 39
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 4,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:55.657Z",
+      "id": 40
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 5,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:55.921Z",
+      "id": 41
+    },
+    {
+      "session_id": 10,
+      "enrollment_id": 6,
+      "status": "present",
+      "method": "manual",
+      "marked_at": "2026-11-01T08:22:56.170Z",
+      "id": 42
     }
   ],
   "assignments": [
@@ -2680,6 +2964,243 @@
       "grade_item_id": 17
     }
   ],
+  "course_materials": [
+    {
+      "id": 1,
+      "offering_id": 1,
+      "file_name": "CS201_Syllabus_Fall2026.pdf",
+      "lecture_no": 0,
+      "title": "CS201_Syllabus_Fall2026",
+      "approved_at": "2026-09-10T09:00:00",
+      "kind": "Syllabus",
+      "size": "412 KB",
+      "ai_state": "parsed",
+      "chunks": 18,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 2,
+      "offering_id": 1,
+      "file_name": "Lecture 01 — Arrays & Complexity.pdf",
+      "lecture_no": 1,
+      "title": "Lecture 01 — Arrays & Complexity",
+      "approved_at": "2026-09-15T09:00:00",
+      "kind": "Lecture",
+      "size": "2.1 MB",
+      "ai_state": "parsed",
+      "chunks": 45,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 3,
+      "offering_id": 1,
+      "file_name": "Lecture 02 — Linked Lists.pdf",
+      "lecture_no": 2,
+      "title": "Lecture 02 — Linked Lists",
+      "approved_at": "2026-09-22T09:00:00",
+      "kind": "Lecture",
+      "size": "1.8 MB",
+      "ai_state": "parsed",
+      "chunks": 38,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 4,
+      "offering_id": 1,
+      "file_name": "Lecture 03 — Stacks & Queues.pdf",
+      "lecture_no": 3,
+      "title": "Lecture 03 — Stacks & Queues",
+      "approved_at": "2026-09-29T09:00:00",
+      "kind": "Lecture",
+      "size": "1.6 MB",
+      "ai_state": "parsed",
+      "chunks": 41,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 5,
+      "offering_id": 1,
+      "file_name": "Reading — Big-O Cheatsheet.pdf",
+      "lecture_no": 3,
+      "title": "Reading — Big-O Cheatsheet",
+      "approved_at": "2026-09-29T09:00:00",
+      "kind": "Reading",
+      "size": "240 KB",
+      "ai_state": "error",
+      "chunks": 0,
+      "ai_error": "Scanned image — no text layer",
+      "in_ai": false
+    },
+    {
+      "id": 6,
+      "offering_id": 1,
+      "file_name": "Lecture 04 — Trees.pdf",
+      "lecture_no": 4,
+      "title": "Lecture 04 — Trees",
+      "approved_at": "2026-10-06T09:00:00",
+      "kind": "Lecture",
+      "size": "2.4 MB",
+      "ai_state": "processing",
+      "chunks": 0,
+      "ai_error": "",
+      "in_ai": false
+    },
+    {
+      "id": 7,
+      "offering_id": 5,
+      "file_name": "MATH240_Syllabus.pdf",
+      "lecture_no": 0,
+      "title": "MATH240_Syllabus",
+      "approved_at": "2026-09-10T09:00:00",
+      "kind": "Syllabus",
+      "size": "380 KB",
+      "ai_state": "parsed",
+      "chunks": 15,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 8,
+      "offering_id": 5,
+      "file_name": "Lecture 05 — Vector Spaces.pdf",
+      "lecture_no": 5,
+      "title": "Lecture 05 — Vector Spaces",
+      "approved_at": "2026-10-13T09:00:00",
+      "kind": "Lecture",
+      "size": "1.4 MB",
+      "ai_state": "parsed",
+      "chunks": 33,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 9,
+      "offering_id": 6,
+      "file_name": "Lecture 06 — ALU Design.pdf",
+      "lecture_no": 6,
+      "title": "Lecture 06 — ALU Design",
+      "approved_at": "2026-10-20T09:00:00",
+      "kind": "Lecture",
+      "size": "3.2 MB",
+      "ai_state": "parsed",
+      "chunks": 52,
+      "ai_error": "",
+      "in_ai": true
+    },
+    {
+      "id": 10,
+      "offering_id": 2,
+      "file_name": "Lecture 07 — Greedy Algorithms.pdf",
+      "lecture_no": 7,
+      "title": "Lecture 07 — Greedy Algorithms",
+      "approved_at": "2026-10-27T09:00:00",
+      "kind": "Lecture",
+      "size": "1.9 MB",
+      "ai_state": "parsed",
+      "chunks": 40,
+      "ai_error": "",
+      "in_ai": true
+    }
+  ],
+  "ai_conversations": [
+    {
+      "id": 1,
+      "user_id": 8,
+      "offering_id": 1,
+      "title": "Dynamic array amortised cost",
+      "created_at": "2026-10-30T10:41:00",
+      "updated_at": "2026-10-30T10:41:30"
+    },
+    {
+      "id": 2,
+      "user_id": 8,
+      "offering_id": 1,
+      "title": "Midterm Review",
+      "created_at": "2026-10-29T20:10:00",
+      "updated_at": "2026-10-29T20:10:30"
+    },
+    {
+      "id": 3,
+      "user_id": 8,
+      "offering_id": 1,
+      "title": "BST deletion with two children",
+      "created_at": "2026-10-26T18:00:00",
+      "updated_at": "2026-10-26T18:00:30"
+    }
+  ],
+  "ai_messages": [
+    {
+      "id": 1,
+      "conversation_id": 1,
+      "sender": "user",
+      "content": "Why is inserting into a dynamic array O(1) amortised if resizing copies every element? That seems like O(n) to me.",
+      "citations": [],
+      "created_at": "2026-10-30T10:41:00",
+      "model": "",
+      "token_count": 29
+    },
+    {
+      "id": 2,
+      "conversation_id": 1,
+      "sender": "ai",
+      "content": "Good question. A single resize is O(n), but it happens rarely. When the array doubles its capacity each time it fills up, the total copying work over n insertions is at most n + n/2 + n/4 + … < 2n.\n\nSpreading that 2n cost across n insertions gives a constant cost per insertion, which is O(1) amortised.",
+      "citations": [
+        "Lecture 01 — Arrays & Complexity · Page 12",
+        "Lecture 02 — Linked Lists · Page 3"
+      ],
+      "created_at": "2026-10-30T10:41:30",
+      "model": "mock-assistant",
+      "token_count": 76
+    },
+    {
+      "id": 3,
+      "conversation_id": 2,
+      "sender": "user",
+      "content": "Which topics are on the midterm?",
+      "citations": [],
+      "created_at": "2026-10-29T20:10:00",
+      "model": "",
+      "token_count": 8
+    },
+    {
+      "id": 4,
+      "conversation_id": 2,
+      "sender": "ai",
+      "content": "Per the syllabus: arrays & complexity, linked lists, stacks & queues, and tree traversals. Expect one Big-O proof — the Lecture 01 slides are the best preparation.",
+      "citations": [
+        "Lecture 01 — Arrays & Complexity · Page 14"
+      ],
+      "created_at": "2026-10-29T20:10:30",
+      "model": "mock-assistant",
+      "token_count": 41
+    },
+    {
+      "id": 5,
+      "conversation_id": 3,
+      "sender": "user",
+      "content": "How do I delete a node with two children from a BST?",
+      "citations": [],
+      "created_at": "2026-10-26T18:00:00",
+      "model": "",
+      "token_count": 13
+    },
+    {
+      "id": 6,
+      "conversation_id": 3,
+      "sender": "ai",
+      "content": "Replace it with its in-order successor (the smallest node in the right subtree), then delete that successor, which has at most one child.",
+      "citations": [
+        "Lecture 04 — Trees · Page 9"
+      ],
+      "created_at": "2026-10-26T18:00:30",
+      "model": "mock-assistant",
+      "token_count": 35
+    }
+  ],
   "alerts": [
     {
       "id": 1,
@@ -2949,43 +3470,289 @@
         "status": "Active"
       },
       "created_at": "2026-09-14T08:00:00"
+    },
+    {
+      "actor_user_id": 1,
+      "target_type": "user",
+      "target_id": 20,
+      "action": "Users Imported",
+      "kind": "create",
+      "target_label": "5 users · fall_roster_2026.xlsx",
+      "ip": "10.4.1.5",
+      "before_json": null,
+      "after_json": {
+        "file": "fall_roster_2026.xlsx",
+        "rows": 5,
+        "status": "Invited"
+      },
+      "created_at": "2026-11-08T00:56:16.206Z",
+      "id": 12
     }
   ],
-  "sample_roster": [
+  "ticket_categories": [
     {
       "id": 1,
-      "full_name": "Rami Fawzi",
-      "email": "rami.fawzi@edusync.edu",
-      "role": "student",
-      "university_id": "20230502"
+      "name": "Escalated AI Thread",
+      "active": true
     },
     {
       "id": 2,
-      "full_name": "Hala Nabil",
-      "email": "hala.nabil@edusync.edu",
-      "role": "student",
-      "university_id": "20230511"
+      "name": "Attendance",
+      "active": true
     },
     {
       "id": 3,
-      "full_name": "Dr. Tarek Saad",
-      "email": "t.saad@edusync.edu",
-      "role": "doctor",
-      "university_id": "FAC-2088"
+      "name": "Quizzes",
+      "active": true
     },
     {
       "id": 4,
-      "full_name": "Dina Samir",
-      "email": "dina.samir@edusync.edu",
-      "role": "student",
-      "university_id": "20230519"
+      "name": "Access & Accounts",
+      "active": true
     },
     {
       "id": 5,
-      "full_name": "Youssef Adel",
-      "email": "youssef.adel@edusync.edu",
-      "role": "student",
-      "university_id": "20230524"
+      "name": "Grades",
+      "active": true
+    },
+    {
+      "id": 6,
+      "name": "Assignments",
+      "active": true
+    }
+  ],
+  "tickets": [
+    {
+      "id": 2041,
+      "enrollment_id": 2,
+      "requester_id": 9,
+      "doctor_user_id": 3,
+      "category_id": 1,
+      "subject": "AI gave conflicting answer on recursion base case",
+      "description": "Why does my factorial function need a base case if n is always positive?",
+      "status": "Open",
+      "decision": "",
+      "priority": "High",
+      "created_at": "2026-10-30T09:12:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2038,
+      "enrollment_id": 3,
+      "requester_id": 10,
+      "doctor_user_id": 3,
+      "category_id": 2,
+      "subject": "QR attendance not recorded for CS 201 Session 3",
+      "description": "I scanned the QR at 10:04 but I'm marked absent. The app showed a network error.",
+      "status": "Pending",
+      "decision": "",
+      "priority": "Normal",
+      "created_at": "2026-10-29T16:40:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2035,
+      "enrollment_id": null,
+      "requester_id": 4,
+      "doctor_user_id": 0,
+      "category_id": 3,
+      "subject": "Cannot publish quiz — \"invalid time window\"",
+      "description": "The MATH 240 Quiz 2 window is Nov 5 08:00–10:00 but publishing fails with \"invalid time window\".",
+      "status": "Open",
+      "decision": "",
+      "priority": "High",
+      "created_at": "2026-10-29T11:18:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2032,
+      "enrollment_id": null,
+      "requester_id": 7,
+      "doctor_user_id": 0,
+      "category_id": 4,
+      "subject": "Request access to Data Engineering course shell",
+      "description": "I've been assigned as co-instructor for CS 201 Section B but can't see it in my Courses Hub.",
+      "status": "Pending",
+      "decision": "",
+      "priority": "Low",
+      "created_at": "2026-10-28T14:02:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2029,
+      "enrollment_id": 2,
+      "requester_id": 9,
+      "doctor_user_id": 3,
+      "category_id": 5,
+      "subject": "Grade still showing 72 after regrade",
+      "description": "My CS 201 Quiz 1 regrade was approved but the grade hasn't updated.",
+      "status": "Resolved",
+      "decision": "Grade updated to 84 by Dr. Reyes.",
+      "priority": "Normal",
+      "created_at": "2026-10-27T10:30:00",
+      "resolved_at": "2026-10-30T10:45:00"
+    },
+    {
+      "id": 2026,
+      "enrollment_id": 24,
+      "requester_id": 12,
+      "doctor_user_id": 4,
+      "category_id": 1,
+      "subject": "AI assistant refuses to explain past exam question",
+      "description": "Asked about MATH 240 2025 final Q3 and the assistant said it can't help.",
+      "status": "Resolved",
+      "decision": "Past exams are released as study material — policy updated.",
+      "priority": "Low",
+      "created_at": "2026-10-26T19:22:00",
+      "resolved_at": "2026-10-27T09:10:00"
+    },
+    {
+      "id": 2023,
+      "enrollment_id": 1,
+      "requester_id": 8,
+      "doctor_user_id": 3,
+      "category_id": 6,
+      "subject": "Lab Report 1 upload shows the old file",
+      "description": "I re-uploaded my lab report but the submission still shows my first draft.",
+      "status": "Open",
+      "decision": "",
+      "priority": "Normal",
+      "created_at": "2026-10-30T08:05:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2020,
+      "enrollment_id": 1,
+      "requester_id": 8,
+      "doctor_user_id": 3,
+      "category_id": 1,
+      "subject": "AI cited the wrong lecture for AVL rotations",
+      "description": "The assistant said rotations are in Week 3 but they are in the Week 4 slides.",
+      "status": "Pending",
+      "decision": "",
+      "priority": "Normal",
+      "created_at": "2026-10-28T12:20:00",
+      "resolved_at": ""
+    },
+    {
+      "id": 2017,
+      "enrollment_id": 22,
+      "requester_id": 8,
+      "doctor_user_id": 4,
+      "category_id": 2,
+      "subject": "QR attendance not recorded for MATH 240",
+      "description": "I was in the Thursday session but I'm marked absent.",
+      "status": "Resolved",
+      "decision": "Scanner log showed no scan from your device — absence stands.",
+      "priority": "Normal",
+      "created_at": "2026-10-29T18:00:00",
+      "resolved_at": "2026-10-30T09:30:00"
+    }
+  ],
+  "ticket_messages": [
+    {
+      "id": 1,
+      "ticket_id": 2041,
+      "from_user_id": 9,
+      "text": "Why does my factorial function need a base case if n is always positive?",
+      "note": false,
+      "created_at": "2026-10-30T09:02:00"
+    },
+    {
+      "id": 2,
+      "ticket_id": 2041,
+      "from_user_id": 0,
+      "text": "A base case is optional when inputs are positive integers.",
+      "note": false,
+      "created_at": "2026-10-30T09:02:30"
+    },
+    {
+      "id": 3,
+      "ticket_id": 2041,
+      "from_user_id": 9,
+      "text": "My lecture notes say the opposite — my code crashed with a stack overflow. Escalating this.",
+      "note": false,
+      "created_at": "2026-10-30T09:11:00"
+    },
+    {
+      "id": 4,
+      "ticket_id": 2038,
+      "from_user_id": 10,
+      "text": "I scanned the QR at 10:04 but I'm marked absent. The app showed a network error.",
+      "note": false,
+      "created_at": "2026-10-29T16:40:00"
+    },
+    {
+      "id": 5,
+      "ticket_id": 2038,
+      "from_user_id": 1,
+      "text": "Checking scanner logs for room B-114 — waiting on Dr. Reyes to confirm.",
+      "note": false,
+      "created_at": "2026-10-29T17:05:00"
+    },
+    {
+      "id": 6,
+      "ticket_id": 2035,
+      "from_user_id": 4,
+      "text": "The MATH 240 Quiz 2 window is Nov 5 08:00–10:00 but publishing fails with \"invalid time window\".",
+      "note": false,
+      "created_at": "2026-10-29T11:18:00"
+    },
+    {
+      "id": 7,
+      "ticket_id": 2032,
+      "from_user_id": 7,
+      "text": "I've been assigned as co-instructor for CS 201 Section B but can't see it in my Courses Hub.",
+      "note": false,
+      "created_at": "2026-10-28T14:02:00"
+    },
+    {
+      "id": 8,
+      "ticket_id": 2029,
+      "from_user_id": 9,
+      "text": "My CS 201 Quiz 1 regrade was approved but the grade hasn't updated.",
+      "note": false,
+      "created_at": "2026-10-27T10:30:00"
+    },
+    {
+      "id": 9,
+      "ticket_id": 2029,
+      "from_user_id": 1,
+      "text": "Grade updated to 84 by Dr. Reyes (EVT-1). Closing.",
+      "note": false,
+      "created_at": "2026-10-30T10:45:00"
+    },
+    {
+      "id": 10,
+      "ticket_id": 2026,
+      "from_user_id": 12,
+      "text": "Asked about MATH 240 2025 final Q3 and the assistant said it can't help.",
+      "note": false,
+      "created_at": "2026-10-26T19:22:00"
+    },
+    {
+      "id": 11,
+      "ticket_id": 2026,
+      "from_user_id": 0,
+      "text": "I can't provide solutions to assessment material.",
+      "note": false,
+      "created_at": "2026-10-26T19:22:30"
+    },
+    {
+      "id": 12,
+      "ticket_id": 2026,
+      "from_user_id": 1,
+      "text": "Past exams are released as study material — policy updated to allow explanations.",
+      "note": false,
+      "created_at": "2026-10-27T09:10:00"
+    },
+    {
+      "id": 13,
+      "ticket_id": 2023,
+      "from_user_id": 8,
+      "text": "I re-uploaded my lab report but the submission still shows my first draft.",
+      "note": false,
+      "created_at": "2026-10-30T08:05:00"
     }
   ]
 }

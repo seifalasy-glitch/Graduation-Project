@@ -4,6 +4,8 @@ import Sidebar from "../Shared_components/Sidebar";
 import Settings from "../Shared_components/Settings";
 import ComingSoon from "../Shared_components/ComingSoon";
 import StudentHome from "./StudentHome";
+import StudentCourses from "./StudentCourses";
+import StudentEnroll from "./StudentEnroll";
 import { MenuItem, User } from "../../types";
 
 const menuItems: MenuItem[] = [
@@ -17,7 +19,7 @@ const menuItems: MenuItem[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const builtPages = ["home", "settings"];
+const builtPages = ["home", "courses", "enroll", "settings"];
 
 type StudentDashboardProps = {
   user: User;
@@ -53,6 +55,8 @@ function StudentDashboard({
 
       <div className="main">
         {page === "home" && <StudentHome user={user} onNavigate={setPage} />}
+        {page === "courses" && <StudentCourses user={user} />}
+        {page === "enroll" && <StudentEnroll user={user} />}
         {page === "settings" && (
           <Settings user={user} onUserChange={onUserChange} />
         )}

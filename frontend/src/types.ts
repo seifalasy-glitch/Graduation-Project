@@ -141,6 +141,16 @@ export type AttendanceRecord = {
   marked_at: string;
 };
 
+export type AttendanceChange = {
+  id: number;
+  record_id: number;
+  doctor_user_id: number;
+  old_status: string;
+  new_status: string;
+  reason_code: string;
+  changed_at: string;
+};
+
 export type RubricItem = {
   name: string;
   desc: string;
@@ -189,6 +199,22 @@ export type StudentGrade = {
   deleted_at: string | null;
 };
 
+export type CourseMaterial = {
+  id: number;
+  offering_id: number;
+  file_name: string;
+  lecture_no: number;
+  title: string;
+  approved_at: string;
+  // ASSUMPTION A12: kind, size and the ai_* fields drive the Knowledge Base screen, the ERD keeps AI state in Knowledge_Chunk instead.
+  kind: string;
+  size: string;
+  ai_state: string;
+  chunks: number;
+  ai_error: string;
+  in_ai: boolean;
+};
+
 // ASSUMPTION A13: the ERD has no quiz tables, Quiz and QuizQuestion follow the quiz screens.
 export type Quiz = {
   id: number;
@@ -200,6 +226,58 @@ export type Quiz = {
   closes_at: string;
   status: string;
   grade_item_id: number;
+};
+
+export type TicketCategory = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
+export type Ticket = {
+  id: number;
+  enrollment_id: number | null;
+  doctor_user_id: number;
+  category_id: number;
+  description: string;
+  status: string;
+  decision: string;
+  created_at: string;
+  resolved_at: string;
+  // ASSUMPTION A14: requester_id, subject and priority are added for the Helpdesk screens, TicketMessage is a new table for the conversation.
+  requester_id: number;
+  subject: string;
+  priority: string;
+};
+
+export type TicketMessage = {
+  id: number;
+  ticket_id: number;
+  from_user_id: number;
+  text: string;
+  note: boolean;
+  created_at: string;
+};
+
+export type AiConversation = {
+  id: number;
+  user_id: number;
+  offering_id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiMessage = {
+  id: number;
+  conversation_id: number;
+  sender: string;
+  content: string;
+  model: string;
+  token_count: number;
+  // ASSUMPTION A16: citations is a simple list instead of the ERD AI_Citation and Knowledge_Chunk tables.
+  citations: string[];
+  created_at: string;
 };
 
 export type AuditValue = string | number | boolean | null;
@@ -230,16 +308,6 @@ export type Alert = {
   page: string;
   created_at: string;
   unread: boolean;
-};
-
-// ASSUMPTION A21: the Excel import is static on the frontend. The uploaded file is not read,
-// the rows shown after upload come from sample_roster in mock-data/db.json.
-export type RosterRow = {
-  id: number;
-  full_name: string;
-  email: string;
-  role: Role;
-  university_id: string;
 };
 
 export type MenuItem = {

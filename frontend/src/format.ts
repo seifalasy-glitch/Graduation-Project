@@ -128,3 +128,59 @@ export function lastName(name: string) {
   const parts = name.split(" ");
   return parts[parts.length - 1];
 }
+
+export function letterGrade(percent: number) {
+  if (percent >= 90) {
+    return "A";
+  }
+  if (percent >= 85) {
+    return "A-";
+  }
+  if (percent >= 80) {
+    return "B+";
+  }
+  if (percent >= 75) {
+    return "B";
+  }
+  if (percent >= 70) {
+    return "B-";
+  }
+  if (percent >= 65) {
+    return "C+";
+  }
+  if (percent >= 60) {
+    return "C";
+  }
+  if (percent >= 50) {
+    return "D";
+  }
+  return "F";
+}
+
+export function nextClass(days: string[], startHour: number) {
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const now = new Date();
+  const nowValue = now.getDay() * 24 + now.getHours() + now.getMinutes() / 60;
+  let best = 99999;
+  let bestDay = "";
+  days.forEach((day) => {
+    let value = names.indexOf(day) * 24 + startHour;
+    if (value < nowValue) {
+      value = value + 7 * 24;
+    }
+    if (value - nowValue < best) {
+      best = value - nowValue;
+      bestDay = day;
+    }
+  });
+  if (bestDay === "") {
+    return "Not scheduled";
+  }
+  if (best < 24 && names[now.getDay()] === bestDay) {
+    return "Today · " + hourText(startHour);
+  }
+  if (best < 48) {
+    return "Tomorrow · " + hourText(startHour);
+  }
+  return bestDay + " · " + hourText(startHour);
+}
