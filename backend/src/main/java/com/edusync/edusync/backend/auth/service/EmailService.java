@@ -46,4 +46,27 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendWelcomeEmail(
+                String recipientEmail,
+                String fullname,
+                String temporaryPassword
+        ){
+            SimpleMailMessage message = new SimpleMailMessage();
+
+            message.setFrom(senderEmail);
+            message.setTo(recipientEmail);
+            message.setSubject("EduSync - Your new account");
+
+            message.setText(
+                    "Hello " + fullname + ",\n\n"
+                            + "An EduSync account has been created for you.\n\n"
+                            + "Email: " + recipientEmail + "\n"
+                            + "Temporary password: " + temporaryPassword + "\n\n"
+                            + "Log in here: " + frontendUrl + "/login\n"
+                            + "You will be asked to choose a new password the first time you log in."
+                            + "\n\nEduSync Team"
+            );
+            mailSender.send(message);
+        }
 }
