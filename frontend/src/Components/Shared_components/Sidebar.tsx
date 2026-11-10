@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 import Icon from "./Icon";
 import { MenuItem } from "../../types";
@@ -8,8 +9,7 @@ type SidebarProps = {
   badge: string;
   sectionLabel?: string;
   items: MenuItem[];
-  page: string;
-  onSelect: (id: string) => void;
+  basePath: string;
   userName: string;
   userSub: string;
   onLogout: () => void;
@@ -32,18 +32,17 @@ function Sidebar({
   badge,
   sectionLabel,
   items,
-  page,
-  onSelect,
+  basePath,
   userName,
   userSub,
   onLogout,
   children,
 }: SidebarProps) {
-  function getItemClass(id: string) {
-    if (id === page) {
-      return "side-item active";
+  function getItemPath(id: string) {
+    if (id === "home") {
+      return basePath;
     }
-    return "side-item";
+    return basePath + "/" + id;
   }
 
   return (
@@ -59,13 +58,16 @@ function Sidebar({
       <ul className="side-menu">
         {items.map((item) => (
           <li key={item.id}>
-            <button
-              className={getItemClass(item.id)}
-              onClick={() => onSelect(item.id)}
+            <NavLink
+              to={getItemPath(item.id)}
+              end={item.id === "home"}
+              className={({ isActive }) =>
+                isActive ? "side-item active" : "side-item"
+              }
             >
               <Icon name={item.icon} />
               <span className="side-item-label">{item.label}</span>
-            </button>
+            </NavLink>
           </li>
         ))}
       </ul>

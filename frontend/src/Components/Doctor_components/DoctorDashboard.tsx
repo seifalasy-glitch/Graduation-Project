@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "../Shared_components/Pages.css";
 import Sidebar from "../Shared_components/Sidebar";
 import TopBar from "../Shared_components/TopBar";
@@ -33,8 +34,6 @@ const menuItems: MenuItem[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const builtPages = ["home", "courses", "attendance", "settings"];
-
 type DoctorDashboardProps = {
   user: User;
   onUserChange: (user: User) => void;
@@ -46,7 +45,8 @@ function DoctorDashboard({
   onUserChange,
   onLogout,
 }: DoctorDashboardProps) {
-  const [page, setPage] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
   const [teachingCourses, setTeachingCourses] = useState<CourseInfo[]>([]);
 
   useEffect(() => {
@@ -65,6 +65,19 @@ function DoctorDashboard({
     loadCourses();
   }, [user.id]);
 
+  let page = location.pathname.split("/")[2];
+  if (page === undefined || page === "") {
+    page = "home";
+  }
+
+  function goTo(id: string) {
+    if (id === "home") {
+      navigate("/doctor");
+    } else {
+      navigate("/doctor/" + id);
+    }
+  }
+
   const currentItem = menuItems.find((item) => item.id === page);
   let currentLabel = "Live Attendance";
   if (currentItem !== undefined) {
@@ -72,7 +85,7 @@ function DoctorDashboard({
   }
 
   if (page === "attendance") {
-    return <AttendanceLive user={user} onExit={() => setPage("home")} />;
+    return <AttendanceLive user={user} onExit={() => navigate("/doctor")} />;
   }
 
   return (
@@ -81,8 +94,7 @@ function DoctorDashboard({
         variant="doctor"
         badge="Faculty"
         items={menuItems}
-        page={page}
-        onSelect={setPage}
+        basePath="/doctor"
         userName={user.name}
         userSub={user.department}
         onLogout={onLogout}
@@ -92,7 +104,7 @@ function DoctorDashboard({
           <p
             key={item.offering.id}
             className="side-extra-item"
-            onClick={() => setPage("courses")}
+            onClick={() => navigate("/doctor/courses/" + item.offering.id)}
           >
             <span className="side-extra-emoji">{item.offering.emoji}</span>
             {item.course.title}
@@ -101,27 +113,40 @@ function DoctorDashboard({
       </Sidebar>
 
       <div className="main">
-        {page === "settings" && (
-          <Settings user={user} onUserChange={onUserChange} />
-        )}
-
         {page !== "settings" && (
           <TopBar
             path={["Faculty", currentLabel]}
             searchPlaceholder="Search students, courses…"
-            onRootClick={() => setPage("home")}
+            onRootClick={() => navigate("/doctor")}
           />
         )}
 
-        {page === "home" && <DoctorHome user={user} onNavigate={setPage} />}
-        {page === "courses" && (
-          <DoctorCourses user={user} onNavigate={setPage} />
-        )}
-        {!builtPages.includes(page) && (
-          <div className="page">
-            <ComingSoon title={currentLabel} onBack={() => setPage("home")} />
-          </div>
-        )}
+        <Routes>
+          <Route index element={<DoctorHome user={user} onNavigate={goTo} />} />
+          <Route
+            path="courses"
+            element={<DoctorCourses user={user} onNavigate={goTo} />}
+          />
+          <Route
+            path="courses/:offeringId"
+            element={<DoctorCourses user={user} onNavigate={goTo} />}
+          />
+          <Route
+            path="settings"
+            element={<Settings user={user} onUserChange={onUserChange} />}
+          />
+          <Route
+            path="*"
+            element={
+              <div className="page">
+                <ComingSoon
+                  title={currentLabel}
+                  onBack={() => navigate("/doctor")}
+                />
+              </div>
+            }
+          />
+        </Routes>
       </div>
     </div>
   );

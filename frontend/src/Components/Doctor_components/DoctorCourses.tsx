@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import "./DoctorCourses.css";
 import Icon from "../Shared_components/Icon";
 import CourseManage from "./CourseManage";
@@ -36,6 +37,12 @@ type DoctorCoursesProps = {
 export const courseColors = ["#7f56d9", "#2e90fa", "#12b76a", "#f79009"];
 
 function DoctorCourses({ user, onNavigate }: DoctorCoursesProps) {
+  const { offeringId } = useParams();
+  const navigate = useNavigate();
+  let openId = 0;
+  if (offeringId !== undefined) {
+    openId = Number(offeringId);
+  }
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [groups, setGroups] = useState<StudentGroup[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -43,7 +50,6 @@ function DoctorCourses({ user, onNavigate }: DoctorCoursesProps) {
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [openId, setOpenId] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -117,7 +123,7 @@ function DoctorCourses({ user, onNavigate }: DoctorCoursesProps) {
         sections={getSections(opened.offering.id)}
         roomName={getRoomName(opened.offering.room_id)}
         attendance={getAttendance(opened.offering.id)}
-        onBack={() => setOpenId(0)}
+        onBack={() => navigate("/doctor/courses")}
         onNavigate={onNavigate}
       />
     );
@@ -187,7 +193,7 @@ function DoctorCourses({ user, onNavigate }: DoctorCoursesProps) {
               </div>
               <button
                 className="dcourses-manage"
-                onClick={() => setOpenId(info.offering.id)}
+                onClick={() => navigate("/doctor/courses/" + info.offering.id)}
               >
                 Manage Course <Icon name="arrow" />
               </button>

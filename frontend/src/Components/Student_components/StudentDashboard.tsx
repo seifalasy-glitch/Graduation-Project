@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "../Shared_components/Pages.css";
 import Sidebar from "../Shared_components/Sidebar";
 import Settings from "../Shared_components/Settings";
@@ -19,8 +19,6 @@ const menuItems: MenuItem[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-const builtPages = ["home", "courses", "enroll", "settings"];
-
 type StudentDashboardProps = {
   user: User;
   onUserChange: (user: User) => void;
@@ -32,7 +30,21 @@ function StudentDashboard({
   onUserChange,
   onLogout,
 }: StudentDashboardProps) {
-  const [page, setPage] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  let page = location.pathname.split("/")[2];
+  if (page === undefined || page === "") {
+    page = "home";
+  }
+
+  function goTo(id: string) {
+    if (id === "home") {
+      navigate("/student");
+    } else {
+      navigate("/student/" + id);
+    }
+  }
 
   const currentItem = menuItems.find((item) => item.id === page);
   let currentLabel = "";
@@ -46,25 +58,40 @@ function StudentDashboard({
         variant="student"
         badge="Student"
         items={menuItems}
-        page={page}
-        onSelect={setPage}
+        basePath="/student"
         userName={user.name}
         userSub={user.department}
         onLogout={onLogout}
       />
 
       <div className="main">
-        {page === "home" && <StudentHome user={user} onNavigate={setPage} />}
-        {page === "courses" && <StudentCourses user={user} />}
-        {page === "enroll" && <StudentEnroll user={user} />}
-        {page === "settings" && (
-          <Settings user={user} onUserChange={onUserChange} />
-        )}
-        {!builtPages.includes(page) && (
-          <div className="page">
-            <ComingSoon title={currentLabel} onBack={() => setPage("home")} />
-          </div>
-        )}
+        <Routes>
+          <Route
+            index
+            element={<StudentHome user={user} onNavigate={goTo} />}
+          />
+          <Route path="courses" element={<StudentCourses user={user} />} />
+          <Route
+            path="courses/:offeringId"
+            element={<StudentCourses user={user} />}
+          />
+          <Route path="enroll" element={<StudentEnroll user={user} />} />
+          <Route
+            path="settings"
+            element={<Settings user={user} onUserChange={onUserChange} />}
+          />
+          <Route
+            path="*"
+            element={
+              <div className="page">
+                <ComingSoon
+                  title={currentLabel}
+                  onBack={() => navigate("/student")}
+                />
+              </div>
+            }
+          />
+        </Routes>
       </div>
     </div>
   );

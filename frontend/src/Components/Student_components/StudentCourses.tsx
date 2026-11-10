@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import "./StudentCourses.css";
 import Icon from "../Shared_components/Icon";
 import StudentCourseHub from "./StudentCourseHub";
@@ -46,6 +47,12 @@ export type PendingTask = {
 };
 
 function StudentCourses({ user }: StudentCoursesProps) {
+  const { offeringId } = useParams();
+  const navigate = useNavigate();
+  let openId = 0;
+  if (offeringId !== undefined) {
+    openId = Number(offeringId);
+  }
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [courses, setCourses] = useState<CourseInfo[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -56,7 +63,6 @@ function StudentCourses({ user }: StudentCoursesProps) {
   const [assignments, setAssignments] = useState<AssignmentInfo[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [openId, setOpenId] = useState(0);
   const [chat, setChat] = useState(false);
   const [error, setError] = useState("");
 
@@ -192,7 +198,7 @@ function StudentCourses({ user }: StudentCoursesProps) {
         roomName={room !== undefined ? room.name : ""}
         week={week}
         tasks={getTasks(opened.offering.id)}
-        onBack={() => setOpenId(0)}
+        onBack={() => navigate("/student/courses")}
         onOpenAI={() => setChat(true)}
       />
     );
@@ -253,7 +259,7 @@ function StudentCourses({ user }: StudentCoursesProps) {
               )}
               <button
                 className="scourses-go"
-                onClick={() => setOpenId(info.offering.id)}
+                onClick={() => navigate("/student/courses/" + info.offering.id)}
               >
                 Go to Course
               </button>
