@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    // ---------- Errors with their own code from the API contract ----------
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, String>> handleApiException(ApiException ex) {
+        return error(ex.getStatus(), ex.getCode(), ex.getMessage());
+    }
+
     // ---------- Wrong data sent by the user (400) ----------
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -55,14 +63,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidation(
             MethodArgumentNotValidException exception
     ) {
-        String message = exception.getBindingResult()
+        FieldError fieldError = exception.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(this::validationMessage)
                 .findFirst()
-                .orElse("Invalid request data");
+                .orElse(null);
 
-        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
+        if (fieldError == null) {
+            return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request data");
+        }
+
+        // API contract: a new password that breaks the rules is WEAK_PASSWORD
+        boolean weakPassword = "newPassword".equals(fieldError.getField())
+                && ("Pattern".equals(fieldError.getCode()) || "Size".equals(fieldError.getCode()));
+
+        String code = weakPassword ? "WEAK_PASSWORD" : "VALIDATION_ERROR";
+
+        return error(HttpStatus.BAD_REQUEST, code, validationMessage(fieldError));
     }
 
     private String validationMessage(FieldError fieldError) {
@@ -93,7 +110,12 @@ public class GlobalExceptionHandler {
             }
 
             if ("Size".equals(code)) {
-                return "Password must be between 8 and 72 characters";
+                return "Password must be at most 72 characters";
+            }
+
+            if ("Pattern".equals(code)) {
+                return "Password must have at least 8 characters with an uppercase letter, "
+                        + "a lowercase letter, a digit and a symbol";
             }
         }
 
@@ -154,6 +176,12 @@ public class GlobalExceptionHandler {
         }
 
         return error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", message);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, String>> handleDisabled(DisabledException ex) {
+        return error(HttpStatus.FORBIDDEN, "ACCOUNT_DISABLED",
+                "This account is disabled. Please contact the admin");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -252,4 +280,4 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(body);
     }
-}
+}

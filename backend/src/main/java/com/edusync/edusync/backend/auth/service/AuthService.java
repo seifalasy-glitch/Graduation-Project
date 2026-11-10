@@ -7,10 +7,14 @@ import com.edusync.edusync.backend.auth.dto.LoginResponse;
 import com.edusync.edusync.backend.auth.dto.MeResponse;
 import com.edusync.edusync.backend.auth.entity.PasswordResetToken;
 import com.edusync.edusync.backend.auth.repository.PasswordResetTokenRepository;
+import com.edusync.edusync.backend.common.ApiException;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
 import com.edusync.edusync.backend.users.repository.UserRepository;
 import com.edusync.edusync.backend.users.repository.UserRoleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,6 +22,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +34,8 @@ import java.util.List;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final AuthenticationProvider authenticationProvider;
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
@@ -37,6 +44,8 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ResetTokenService resetTokenService;
     private final EmailService emailService;
+    private final UserDetailsService userDetailsService;
+    private final long expiresInSeconds;
 
     public AuthService(
             AuthenticationProvider authenticationProvider,
@@ -46,7 +55,9 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             PasswordResetTokenRepository passwordResetTokenRepository,
             ResetTokenService resetTokenService,
-            EmailService emailService
+            EmailService emailService,
+            UserDetailsService userDetailsService,
+            @Value("${app.jwt.expiration-ms}") long expirationMs
     ) {
         this.authenticationProvider = authenticationProvider;
         this.userRepository = userRepository;
@@ -56,6 +67,8 @@ public class AuthService {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.resetTokenService = resetTokenService;
         this.emailService = emailService;
+        this.userDetailsService = userDetailsService;
+        this.expiresInSeconds = expirationMs / 1000;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -75,27 +88,13 @@ public class AuthService {
                 .findByEmail(userDetails.getUsername())
                 .orElseThrow();
 
-        List<String> roles = userRoleRepository
-                .findByUserId(user.getUserId())
-                .stream()
-                .map(UserRole::getRole)
-                .toList();
-
         String token = jwtService.generateToken(userDetails, user);
 
-        return new LoginResponse(
-                token,
-                "Bearer",
-                user.getUserId(),
-                user.getFullName(),
-                user.getEmail(),
-                roles,
-                Boolean.TRUE.equals(user.getMustChangePassword())
-        );
+        return buildLoginResponse(token, user);
     }
 
     @Transactional
-    public void changePassword(
+    public LoginResponse changePassword(
             String email,
             ChangePasswordRequest request
     ) {
@@ -109,8 +108,10 @@ public class AuthService {
                 request.currentPassword(),
                 user.getPasswordHash())) {
 
-            throw new BadCredentialsException(
-                    "Current password is incorrect"
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "WRONG_PASSWORD",
+                    "The current password is wrong"
             );
         }
 
@@ -118,7 +119,9 @@ public class AuthService {
                 request.newPassword(),
                 user.getPasswordHash())) {
 
-            throw new IllegalArgumentException(
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "SAME_AS_OLD",
                     "New password must be different from current password"
             );
         }
@@ -129,9 +132,17 @@ public class AuthService {
 
         user.setMustChangePassword(false);
 
+        // Old tokens stop working (tokenVersion + 1), so we send a fresh one back
         user.setTokenVersion(user.getTokenVersion() + 1);
 
-        userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
+
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(savedUser.getEmail());
+
+        String token = jwtService.generateToken(userDetails, savedUser);
+
+        return buildLoginResponse(token, savedUser);
     }
 
     @Transactional
@@ -203,22 +214,7 @@ public class AuthService {
                         "Unauthorized"
                 ));
 
-        List<String> roles = userRoleRepository
-                .findByUserId(user.getUserId())
-                .stream()
-                .map(UserRole::getRole)
-                .toList();
-
-        return new MeResponse(
-                user.getUserId(),
-                user.getUniversityId(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getFullNameAr(),
-                roles,
-                user.getStatus(),
-                user.getMustChangePassword()
-        );
+        return toUserResponse(user);
     }
 
 
@@ -243,10 +239,47 @@ public class AuthService {
 
                     passwordResetTokenRepository.save(resetToken);
 
-                    emailService.sendPasswordResetEmail(
-                            user.getEmail(),
-                            token
-                    );
+                    // The API contract says this endpoint always answers 202,
+                    // so a failed email is logged instead of becoming a 500
+                    try {
+                        emailService.sendPasswordResetEmail(
+                                user.getEmail(),
+                                token
+                        );
+                    } catch (Exception e) {
+                        log.warn("Could not send the reset email to {}: {}",
+                                user.getEmail(), e.getMessage());
+                    }
                 });
+    }
+
+    private LoginResponse buildLoginResponse(String token, User user) {
+        return new LoginResponse(
+                token,
+                "Bearer",
+                expiresInSeconds,
+                Boolean.TRUE.equals(user.getMustChangePassword()),
+                toUserResponse(user)
+        );
+    }
+
+    private MeResponse toUserResponse(User user) {
+        List<String> roles = userRoleRepository
+                .findByUserId(user.getUserId())
+                .stream()
+                .map(UserRole::getRole)
+                .toList();
+
+        return new MeResponse(
+                user.getUserId(),
+                user.getUniversityId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getFullNameAr(),
+                roles,
+                user.getStatus(),
+                user.getMustChangePassword(),
+                user.getCreatedAt()
+        );
     }
 }

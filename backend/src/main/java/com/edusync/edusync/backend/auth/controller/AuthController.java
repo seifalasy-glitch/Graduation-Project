@@ -40,16 +40,17 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<Void> changePassword(
+    public ResponseEntity<LoginResponse> changePassword(
             Authentication authentication,
             @Valid @RequestBody ChangePasswordRequest request
     ) {
-        authService.changePassword(
-                authentication.getName(),
-                request
+        // API contract: 200 with a fresh token (the old one stops working)
+        return ResponseEntity.ok(
+                authService.changePassword(
+                        authentication.getName(),
+                        request
+                )
         );
-
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")

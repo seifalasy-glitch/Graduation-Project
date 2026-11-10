@@ -1,14 +1,14 @@
 package com.edusync.edusync.backend.auth.dto;
 
-import java.util.List;
-
+/**
+ * Same shape as LoginResponse in the API contract.
+ * Also returned by POST /auth/change-password, with a fresh token.
+ */
 public record LoginResponse(
         String accessToken,
         String tokenType,
-        Long userId,
-        String fullName,
-        String email,
-        List<String> roles,
-        boolean mustChangePassword
+        long expiresInSeconds,
+        boolean mustChangePassword,
+        MeResponse user
 ) {
 }

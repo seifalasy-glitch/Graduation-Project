@@ -3,6 +3,7 @@ package com.edusync.edusync.backend.auth.filter;
 import com.edusync.edusync.backend.auth.service.JwtService;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -44,7 +45,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        return path.equals("/api/auth/forgot-password")
+        // Public endpoints: an old or expired token sent with them must not block them
+        return path.equals("/api/auth/login")
+                || path.equals("/api/auth/forgot-password")
                 || path.equals("/api/auth/reset-password");
     }
 
@@ -142,6 +145,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .setAuthentication(authentication);
                 }
             }
+
+        } catch (ExpiredJwtException e) {
+
+            // API contract: an expired token answers 401 TOKEN_EXPIRED,
+            // so the frontend knows to send the user back to the login page
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(
+                    "{\"code\":\"TOKEN_EXPIRED\",\"message\":\"Your session has expired. Please log in again\"}"
+            );
+
+            return;
 
         } catch (JwtException | IllegalArgumentException |
                  UsernameNotFoundException e) {
