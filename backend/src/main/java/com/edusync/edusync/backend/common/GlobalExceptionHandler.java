@@ -1,52 +1,54 @@
 package com.edusync.edusync.backend.common;
 
+import com.edusync.edusync.backend.admin.exception.DuplicateUserException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
-import com.edusync.edusync.backend.admin.exception.DuplicateUserException;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Every error leaves the backend in the shape the API contract asks for:
+ * { "code": "SOME_CODE", "message": "A sentence the user can read" }
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // ---------- Wrong data sent by the user (400) ----------
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(
             IllegalArgumentException exception
     ) {
-        String message = "Invalid request data";
+        // Our services write readable messages ("Invalid roles", "Column 1 must be UniversityId"...),
+        // so the user gets the real reason instead of a generic text
+        String message = exception.getMessage() != null
+                ? exception.getMessage()
+                : "Invalid request data";
 
-        if ("New password must be different from current password"
-                .equals(exception.getMessage())) {
-            message = "New password must be different from current password";
-        }
-
-        return error(HttpStatus.BAD_REQUEST, message);
-    }
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(
-            BadCredentialsException exception,
-            HttpServletRequest request
-    ) {
-        String message = "Invalid credentials";
-
-        if ("/api/auth/login".equals(request.getServletPath())) {
-            message = "Invalid email or password";
-        }
-
-        return error(HttpStatus.UNAUTHORIZED, message);
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -60,7 +62,7 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Invalid request data");
 
-        return error(HttpStatus.BAD_REQUEST, message);
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
     }
 
     private String validationMessage(FieldError fieldError) {
@@ -95,70 +97,89 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return "Invalid request data";
+        // Any other field: say which field is wrong
+        if ("NotBlank".equals(code) || "NotNull".equals(code) || "NotEmpty".equals(code)) {
+            return field + " is required";
+        }
+
+        return field + " is invalid";
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleInvalidJson(
             HttpMessageNotReadableException exception
     ) {
-        return error(HttpStatus.BAD_REQUEST, "Invalid JSON format");
+        return error(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Invalid JSON format");
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFound(
-            NoResourceFoundException exception
+    @ExceptionHandler({
+            MissingServletRequestPartException.class,
+            MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<Map<String, String>> handleMissingPart(Exception exception) {
+        String name = exception instanceof MissingServletRequestPartException part
+                ? part.getRequestPartName()
+                : ((MissingServletRequestParameterException) exception).getParameterName();
+
+        return error(HttpStatus.BAD_REQUEST, "MISSING_FIELD", name + " is required");
+    }
+
+    // ---------- File uploads ----------
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleFileTooLarge(
+            MaxUploadSizeExceededException exception
     ) {
-        return error(HttpStatus.NOT_FOUND, "Endpoint not found");
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE",
+                "The file is larger than 10 MB");
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<Map<String, String>> handleMultipart(MultipartException exception) {
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                "Send the file as multipart/form-data");
+    }
+
+    // ---------- Login and permissions ----------
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleBadCredentials(
+            BadCredentialsException exception,
+            HttpServletRequest request
+    ) {
+        String message = "Invalid credentials";
+
+        if ("/api/auth/login".equals(request.getServletPath())) {
+            message = "Invalid email or password";
+        }
+
+        return error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", message);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
+        return error(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access denied");
+    }
+
+    // ---------- Not found / wrong method ----------
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(NoResourceFoundException exception) {
+        return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Endpoint not found");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, String>> handleMethodNotAllowed(
             HttpRequestMethodNotSupportedException exception
     ) {
-        return error(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed");
+        return error(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "Method not allowed");
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleUnexpectedError(Exception ex) {
-        ex.printStackTrace();
-        return error(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred"
-        );
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDenied(
-            AccessDeniedException ex
-    ) {
-        return error(
-                HttpStatus.FORBIDDEN,
-                "Access denied"
-        );
-    }
+    // ---------- Duplicates and conflicts (409) ----------
 
     @ExceptionHandler(DuplicateUserException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicateUser(
-            DuplicateUserException ex
-    ) {
-        return error(
-                HttpStatus.CONFLICT,
-                ex.getMessage()
-        );
-    }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, String>> handleResponseStatus(
-            ResponseStatusException ex
-    ) {
-        String message = ex.getReason() != null
-                ? ex.getReason()
-                : "Request failed";
-
-        return ResponseEntity
-                .status(ex.getStatusCode())
-                .body(Map.of("message", message));
+    public ResponseEntity<Map<String, String>> handleDuplicateUser(DuplicateUserException ex) {
+        return error(HttpStatus.CONFLICT, "DUPLICATE", ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -168,31 +189,67 @@ public class GlobalExceptionHandler {
         Throwable cause = ex;
 
         while (cause != null) {
-
-            if (cause instanceof SQLException sqlException) {
-
-                if ("23505".equals(sqlException.getSQLState())) {
-                    return error(
-                            HttpStatus.CONFLICT,
-                            "A database record with these values already exists"
-                    );
-                }
+            if (cause instanceof SQLException sqlException
+                    && "23505".equals(sqlException.getSQLState())) {
+                return error(HttpStatus.CONFLICT, "DUPLICATE",
+                        "A database record with these values already exists");
             }
 
             cause = cause.getCause();
         }
 
-        return error(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred"
-        );
+        log.error("Database error", ex);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "An unexpected error occurred");
     }
+
+    // ---------- Errors thrown with a status, e.g. ResponseStatusException(NOT_FOUND, "User not found") ----------
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException ex) {
+        String reason = ex.getReason() != null ? ex.getReason() : "Request failed";
+
+        // A reason already written as a code (e.g. "INVALID_OR_EXPIRED_TOKEN") is used as the code;
+        // a normal sentence (e.g. "User not found") gets a code from the status
+        String code = reason.matches("[A-Z_]+")
+                ? reason
+                : codeFor(ex.getStatusCode());
+
+        return error(ex.getStatusCode(), code, reason);
+    }
+
+    // ---------- Anything else (500) ----------
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleUnexpectedError(Exception ex) {
+        log.error("Unexpected error", ex);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "An unexpected error occurred");
+    }
+
+    // ---------- Helpers ----------
+
+    private String codeFor(HttpStatusCode status) {
+        return switch (status.value()) {
+            case 400 -> "VALIDATION_ERROR";
+            case 401 -> "UNAUTHORIZED";
+            case 403 -> "FORBIDDEN";
+            case 404 -> "NOT_FOUND";
+            case 409 -> "CONFLICT";
+            case 429 -> "TOO_MANY_REQUESTS";
+            default -> "INTERNAL_ERROR";
+        };
+    }
+
     private ResponseEntity<Map<String, String>> error(
-            HttpStatus status,
+            HttpStatusCode status,
+            String code,
             String message
     ) {
-        return ResponseEntity
-                .status(status)
-                .body(Map.of("message", message));
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("code", code);
+        body.put("message", message);
+
+        return ResponseEntity.status(status).body(body);
     }
 }

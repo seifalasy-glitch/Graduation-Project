@@ -64,7 +64,7 @@ public class SecurityConfig {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
                             response.getWriter().write(
-                                    "{\"message\":\"Unauthorized\"}"
+                                    "{\"code\":\"UNAUTHORIZED\",\"message\":\"Unauthorized\"}"
                             );
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
@@ -72,7 +72,7 @@ public class SecurityConfig {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
                             response.getWriter().write(
-                                    "{\"message\":\"Access denied\"}"
+                                    "{\"code\":\"FORBIDDEN\",\"message\":\"Access denied\"}"
                             );
                         })
                 )

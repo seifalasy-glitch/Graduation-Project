@@ -92,7 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         response.setCharacterEncoding("UTF-8");
 
                         response.getWriter().write(
-                                "{\"message\":\"Invalid or revoked token\"}"
+                                "{\"code\":\"INVALID_TOKEN\",\"message\":\"Invalid or revoked token\"}"
                         );
 
                         return;
@@ -125,7 +125,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         response.setCharacterEncoding("UTF-8");
 
                         response.getWriter().write(
-                                "{\"message\":\"Password change required\"}"
+                                "{\"code\":\"PASSWORD_CHANGE_REQUIRED\",\"message\":\"Password change required\"}"
                         );
 
                         return;
