@@ -1,6 +1,6 @@
 package com.edusync.edusync.backend.admin.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record UserResponse(
@@ -12,6 +12,6 @@ public record UserResponse(
         List<String> roles,
         String status,
         Boolean mustChangePassword,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

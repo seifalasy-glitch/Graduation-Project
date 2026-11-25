@@ -1,11 +1,9 @@
 package com.edusync.edusync.backend.auth.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
-/**
- * The "User" object of the API contract. Never contains the password hash.
- */
+
 public record MeResponse(
         Long userId,
         String universityId,
@@ -15,6 +13,6 @@ public record MeResponse(
         List<String> roles,
         String status,
         Boolean mustChangePassword,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

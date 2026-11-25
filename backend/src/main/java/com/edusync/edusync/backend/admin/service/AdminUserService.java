@@ -6,7 +6,9 @@ import com.edusync.edusync.backend.admin.dto.PageMeta;
 import com.edusync.edusync.backend.admin.dto.UpdateUserRequest;
 import com.edusync.edusync.backend.admin.dto.UserPageResponse;
 import com.edusync.edusync.backend.admin.dto.UserResponse;
-import com.edusync.edusync.backend.admin.exception.DuplicateUserException;
+import com.edusync.edusync.backend.common.ApiException;
+import com.edusync.edusync.backend.common.DateTimeUtil;
+import com.edusync.edusync.backend.common.UniversityEmailPolicy;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
 import com.edusync.edusync.backend.users.repository.UserRepository;
@@ -37,17 +39,20 @@ public class AdminUserService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final TemporaryPasswordGenerator passwordGenerator;
+    private final UniversityEmailPolicy emailPolicy;
 
     public AdminUserService(
             UserRepository userRepository,
             UserRoleRepository userRoleRepository,
             PasswordEncoder passwordEncoder,
-            TemporaryPasswordGenerator passwordGenerator
+            TemporaryPasswordGenerator passwordGenerator,
+            UniversityEmailPolicy emailPolicy
     ) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordGenerator = passwordGenerator;
+        this.emailPolicy = emailPolicy;
     }
 
     @Transactional
@@ -91,10 +96,10 @@ public class AdminUserService {
 
             if (!email.equals(user.getEmail())) {
 
+                emailPolicy.requireUniversityEmail(email);
+
                 if (userRepository.findByEmail(email).isPresent()) {
-                    throw new DuplicateUserException(
-                            "Email already exists"
-                    );
+                    throw emailTaken();
                 }
 
                 user.setEmail(email);
@@ -308,15 +313,18 @@ public class AdminUserService {
             throw new IllegalArgumentException("Invalid roles");
         }
 
+        emailPolicy.requireUniversityEmail(email);
+
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new DuplicateUserException(
-                    "Email already exists"
-            );
+            throw emailTaken();
         }
 
         if (userRepository.findByUniversityId(universityId).isPresent()) {
-            throw new DuplicateUserException(
-                    "University ID already exists"
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "UNIVERSITY_ID_TAKEN",
+                    "University ID already exists",
+                    ApiException.fieldDetails("universityId", "already in use")
             );
         }
 
@@ -358,6 +366,15 @@ public class AdminUserService {
         );
     }
 
+    private ApiException emailTaken() {
+        return new ApiException(
+                HttpStatus.CONFLICT,
+                "EMAIL_TAKEN",
+                "Email already exists",
+                ApiException.fieldDetails("email", "already in use")
+        );
+    }
+
     private UserResponse toUserResponse(User user) {
 
         List<String> roles = userRoleRepository
@@ -375,7 +392,7 @@ public class AdminUserService {
                 roles,
                 user.getStatus(),
                 user.getMustChangePassword(),
-                user.getCreatedAt()
+                DateTimeUtil.toInstant(user.getCreatedAt())
         );
     }
 }

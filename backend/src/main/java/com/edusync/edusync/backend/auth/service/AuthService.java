@@ -8,6 +8,7 @@ import com.edusync.edusync.backend.auth.dto.MeResponse;
 import com.edusync.edusync.backend.auth.entity.PasswordResetToken;
 import com.edusync.edusync.backend.auth.repository.PasswordResetTokenRepository;
 import com.edusync.edusync.backend.common.ApiException;
+import com.edusync.edusync.backend.common.DateTimeUtil;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
 import com.edusync.edusync.backend.users.repository.UserRepository;
@@ -30,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.edusync.edusync.backend.auth.dto.ResetPasswordRequest;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AuthService {
@@ -73,10 +75,11 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) {
 
+        // Emails are stored in lower case, so Ali@x.edu and ali@x.edu are the same account
         Authentication authentication =
                 authenticationProvider.authenticate(
                         new UsernamePasswordAuthenticationToken(
-                                request.email(),
+                                normalizeEmail(request.email()),
                                 request.password()
                         )
                 );
@@ -154,27 +157,18 @@ public class AuthService {
 
         PasswordResetToken resetToken = passwordResetTokenRepository
                 .findByTokenHashForUpdate(tokenHash)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "INVALID_OR_EXPIRED_TOKEN"
-                ));
+                .orElseThrow(AuthService::invalidResetToken);
 
         LocalDateTime now = LocalDateTime.now();
 
         if (resetToken.getUsedAt() != null
                 || !resetToken.getExpiresAt().isAfter(now)) {
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "INVALID_OR_EXPIRED_TOKEN"
-            );
+            throw invalidResetToken();
         }
 
         User user = userRepository.findById(resetToken.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "INVALID_OR_EXPIRED_TOKEN"
-                ));
+                .orElseThrow(AuthService::invalidResetToken);
 
         user.setPasswordHash(
                 passwordEncoder.encode(request.newPassword())
@@ -221,7 +215,7 @@ public class AuthService {
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
 
-        userRepository.findByEmail(request.email())
+        userRepository.findByEmail(normalizeEmail(request.email()))
                 .ifPresent(user -> {
 
                     String token = resetTokenService.generateToken();
@@ -253,6 +247,18 @@ public class AuthService {
                 });
     }
 
+    private static ApiException invalidResetToken() {
+        return new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "INVALID_OR_EXPIRED_TOKEN",
+                "This reset link is invalid or has expired. Please request a new one"
+        );
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
     private LoginResponse buildLoginResponse(String token, User user) {
         return new LoginResponse(
                 token,
@@ -279,7 +285,7 @@ public class AuthService {
                 roles,
                 user.getStatus(),
                 user.getMustChangePassword(),
-                user.getCreatedAt()
+                DateTimeUtil.toInstant(user.getCreatedAt())
         );
     }
 }

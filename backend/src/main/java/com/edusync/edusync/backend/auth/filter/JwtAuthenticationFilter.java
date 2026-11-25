@@ -73,15 +73,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (email != null
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
+                // The token is genuine here (signature and expiry were checked above).
+                // A disabled account answers 403 ACCOUNT_DISABLED, even with an old token.
+                User user = userRepository.findByEmail(email)
+                        .orElseThrow(() ->
+                                new UsernameNotFoundException("User not found")
+                        );
+
+                if ("DISABLED".equals(user.getStatus())) {
+
+                    SecurityContextHolder.clearContext();
+
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                            "{\"code\":\"ACCOUNT_DISABLED\",\"message\":\"This account is disabled. Please contact the admin\"}"
+                    );
+
+                    return;
+                }
+
                 UserDetails userDetails =
                         userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(token, userDetails)) {
-
-                    User user = userRepository.findByEmail(email)
-                            .orElseThrow(() ->
-                                    new UsernameNotFoundException("User not found")
-                            );
 
                     if (!jwtService.isTokenVersionValid(token, user)) {
 

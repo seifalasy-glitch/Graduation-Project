@@ -82,6 +82,30 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+
+                        // ---- Academic structure (roles follow openapi.yaml) ----
+                        .requestMatchers(HttpMethod.GET, "/api/programs").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/programs").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/programs/*").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/terms").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/terms").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/terms/*").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/courses").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/courses").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/courses/*").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/offerings").hasRole("ADMIN")
+                        // students/doctors may read one offering (ownership is checked in the service later)
+                        .requestMatchers(HttpMethod.GET, "/api/offerings/*").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/offerings").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/offerings/*").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/rooms").hasAnyRole("DOCTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/rooms").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/*").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -103,4 +127,4 @@ public class SecurityConfig {
         registration.setEnabled(false);
         return registration;
     }
-}
+}
