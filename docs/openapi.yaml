@@ -23,7 +23,7 @@ info:
     - Login: university email + password. Accounts are created by a admin with a
       temporary password; on first login the user MUST create a new password
       (USER.must_change_password). Passwords are stored only as a hash (BCrypt).
-    - Attendance statuses: PRESENT and ABSENT only. Unmarked = null.
+    - Attendance statuses: PRESENT, LATE and ABSENT. Unmarked = null.
     - QR code rotates every 15 seconds (backend setting `attendance.qr-rotation-seconds`).
     - The QR window end is stored in ATTENDANCE_SESSION.qr_window_ends_at.
     - Login token lasts 8 hours. No refresh token: after 8 hours the user logs in again.
@@ -46,6 +46,13 @@ info:
     - No login lockout. Forgotten passwords: self-service email reset (30-minute single-use link).
     - Attendance can be LATE: the doctor sets "late after X minutes" per session;
       for absence warnings every 2 LATE = 1 absence.
+    - Attendance grade (built with the grades module): per course and per group type
+      the doctor sets a total attendance grade (lectures: optional, labs: always).
+      grade = total x attended / sessions actually held; LATE counts half;
+      a student still unmarked when the session is finished counts as absent.
+    - LOCAL_WIFI_QR "in the room" check = the student's IP address must be inside the
+      room's subnet (e.g. 10.20.5.0/24). A browser cannot report the Wi-Fi SSID or
+      router MAC, so those are stored on the room but not checked.
     - Course registration: students pick courses from their program plan (by level and
       term type) within their personal credit limit; their advisor (a doctor) approves,
       then an admin gives final acceptance, which creates the enrollments.
@@ -1615,7 +1622,8 @@ paths:
         also chooses how many minutes students can scan; after that the session
         becomes MANUAL_ONLY automatically. For MANUAL, omit `qrWindowMinutes`.
         The backend saves starts_at + qrWindowMinutes in qr_window_ends_at.
-        Errors: NOT_YOUR_GROUP, SESSION_ALREADY_OPEN.
+        LOCAL_WIFI_QR needs a roomId whose room has a subnet (else VALIDATION_ERROR).
+        Errors: VALIDATION_ERROR (400), NOT_YOUR_GROUP (403), SESSION_ALREADY_OPEN (409).
       x-roles: [DOCTOR]
       requestBody:
         required: true
@@ -1847,8 +1855,8 @@ paths:
       description: |
         The backend checks: the QR token is valid and not expired (15 s), the QR
         window is open, the student currently belongs to the session's group,
-        and was not already marked. For LOCAL_WIFI_QR it also checks the network
-        (the room's router SSID/MAC or campus subnet). If the scan is more than the
+        and was not already marked. For LOCAL_WIFI_QR it also checks the network:
+        the student's IP must be inside the room's subnet. If the scan is more than the
         session's lateAfterMinutes after the start, the status is LATE, else PRESENT.
         Errors: QR_EXPIRED, WINDOW_CLOSED, NOT_IN_GROUP, ALREADY_MARKED, NETWORK_NOT_ALLOWED.
       x-roles: [STUDENT]
