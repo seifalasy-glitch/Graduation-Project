@@ -127,4 +127,43 @@ public final class AttendanceDtos {
 
     public record MySession(Long sessionId, Instant startsAt, String groupType, String groupLabel, String status) {
     }
+
+    // ------------------------------------------------------------ phase C: warnings
+
+    /** AttendanceWarningRule. ruleId null = never saved for this group type (warnings off). */
+    public record WarningRuleResponse(
+            Long ruleId,
+            Long offeringId,
+            String groupType,
+            boolean enabled,
+            Integer absenceLimit,
+            Instant updatedAt
+    ) {
+    }
+
+    /** AttendanceWarningRuleInput */
+    public record WarningRuleInput(
+            @NotNull(message = "enabled is required") Boolean enabled,
+            Integer absenceLimit
+    ) {
+    }
+
+    /** AttendanceWarning. Counts and weeks are current (recalculated), not frozen at issue time. */
+    public record WarningResponse(
+            Long warningId,
+            Long enrollmentId,
+            StudentRef student,
+            String programName,
+            String courseCode,
+            String groupType,
+            String groupLabel,
+            String groupSchedule,
+            int absenceCount,
+            int lateCount,
+            List<Integer> absentWeeks,
+            Integer absenceLimit,
+            Instant issuedAt,
+            Instant emailedAt
+    ) {
+    }
 }

@@ -37,12 +37,14 @@ public class AttendanceCorrectionService {
     private final AttendanceQueries queries;
     private final AttendanceStatsQueries stats;
     private final CurrentUserService currentUser;
+    private final AttendanceWarningService warnings;
 
     public AttendanceCorrectionService(AttendanceQueries queries, AttendanceStatsQueries stats,
-                                       CurrentUserService currentUser) {
+                                       CurrentUserService currentUser, AttendanceWarningService warnings) {
         this.queries = queries;
         this.stats = stats;
         this.currentUser = currentUser;
+        this.warnings = warnings;
     }
 
     @Transactional
@@ -80,6 +82,7 @@ public class AttendanceCorrectionService {
             stats.updateStatus(recordId, newStatus);
         }
         stats.insertChange(recordId, existing == null ? null : existing.status(), newStatus, reason, doctorId, now);
+        warnings.recheckForSession(sessionId);   // a correction can push a student over the limit
 
         return AttendanceSessionService.toEntry(queries.rosterEntry(sessionId, enrollmentId).orElseThrow());
     }

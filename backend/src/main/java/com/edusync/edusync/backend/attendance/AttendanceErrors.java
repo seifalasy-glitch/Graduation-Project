@@ -61,6 +61,16 @@ public final class AttendanceErrors {
         return of(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "Attendance record not found");
     }
 
+    public static ApiException noSuchGroupType() {
+        return of(HttpStatus.CONFLICT, "NO_SUCH_GROUP_TYPE", "This course has no groups of that type");
+    }
+
+    public static ApiException limitRequired() {
+        return new ApiException(HttpStatus.BAD_REQUEST, "LIMIT_REQUIRED",
+                "Set absenceLimit (1 or more) when turning warnings on",
+                ApiException.fieldDetails("absenceLimit", "required when enabled is true"));
+    }
+
     private static ApiException of(HttpStatus status, String code, String message) {
         return new ApiException(status, code, message);
     }

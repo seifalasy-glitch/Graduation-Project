@@ -48,17 +48,20 @@ public class AttendanceSessionService {
     private final AttendanceQueries queries;
     private final CurrentUserService currentUser;
     private final ResetTokenService tokens;   // random token + SHA-256 hash (only the hash is stored)
+    private final AttendanceWarningService warnings;
     private final int qrRotationSeconds;
 
     public AttendanceSessionService(
             AttendanceQueries queries,
             CurrentUserService currentUser,
             ResetTokenService tokens,
+            AttendanceWarningService warnings,
             @Value("${attendance.qr-rotation-seconds:15}") int qrRotationSeconds
     ) {
         this.queries = queries;
         this.currentUser = currentUser;
         this.tokens = tokens;
+        this.warnings = warnings;
         this.qrRotationSeconds = qrRotationSeconds;
     }
 
@@ -202,6 +205,7 @@ public class AttendanceSessionService {
         // ends_at must be after starts_at (DB check), even if finished in the same instant
         LocalDateTime endsAt = now.isAfter(session.startsAt()) ? now : session.startsAt().plusSeconds(1);
         queries.finishSession(sessionId, endsAt);
+        warnings.recheckForSession(sessionId);   // may create absence warnings (+ emails after commit)
 
         return new FinishResponse(toResponse(queries.findSession(sessionId).orElseThrow()), absentMarked);
     }

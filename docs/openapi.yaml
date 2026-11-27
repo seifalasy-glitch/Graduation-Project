@@ -45,7 +45,8 @@ info:
     - Students and enrollments can be imported in bulk from Excel (preview, then commit).
     - No login lockout. Forgotten passwords: self-service email reset (30-minute single-use link).
     - Attendance can be LATE: the doctor sets "late after X minutes" per session;
-      for absence warnings every 2 LATE = 1 absence.
+      for absence warnings every 2 LATE = 1 absence, and a student still unmarked
+      when the session is finished counts as absent.
     - Attendance grade (built with the grades module): per course and per group type
       the doctor sets a total attendance grade (lectures: optional, labs: always).
       grade = total x attended / sessions actually held; LATE counts half;
@@ -1939,9 +1940,14 @@ paths:
         Off by default; there is no default limit: the doctor sets
         `absenceLimit` (a number of absences) when turning it on.
         When on, the backend re-checks the course every time a session of that
-        type is finished or corrected. Absences = ABSENT marks + one for every
-        2 LATE marks. The first time a student's absences reach the limit, one ATTENDANCE_WARNING row is created and the student
-        is emailed (once; it is never repeated for the same rule).
+        type is finished or corrected, and right after the rule is saved turned on.
+        Absences = ABSENT marks + students left unmarked in a finished session
+        + one for every 2 LATE marks (finished sessions only, withdrawn students skipped).
+        The first time a student's absences reach the limit, one ATTENDANCE_WARNING row is created and the student
+        is emailed (once; it is never repeated for the same rule, even if the limit changes).
+        Turning warnings off without absenceLimit keeps the old limit.
+        {doctorFullName} = the doctor who last saved the rule. Only a doctor who
+        currently teaches a group of the course may change it.
 
         Warning email (English):
           Subject: Attendance warning – {courseCode} {courseTitle}
@@ -1951,8 +1957,9 @@ paths:
           Dr. {doctorFullName} is {absenceLimit} absences.
           Please contact your doctor if you think this is wrong.
 
-        Errors: NO_SUCH_GROUP_TYPE (e.g. PRACTICAL in a course with no lab),
-        NOT_YOUR_COURSE, LIMIT_REQUIRED (enabled without absenceLimit).
+        Errors: VALIDATION_ERROR (400), LIMIT_REQUIRED (400, enabled without absenceLimit),
+        NOT_YOUR_COURSE (403), OFFERING_NOT_FOUND (404),
+        NO_SUCH_GROUP_TYPE (409, e.g. PRACTICAL in a course with no lab).
       x-roles: [DOCTOR]
       parameters:
         - {$ref: "#/components/parameters/OfferingId"}
@@ -1981,7 +1988,10 @@ paths:
       tags: [Attendance Warnings]
       summary: Students who passed the absence limit in a course
       operationId: getOfferingsByOfferingIdAttendanceWarnings
-      description: Counts and weeks are current (recalculated), not frozen at the time of the warning.
+      description: |
+        Counts and weeks are current (recalculated), not frozen at the time of the warning.
+        Admin, or a doctor who teaches or taught the course.
+        Errors: NOT_YOUR_COURSE (403), OFFERING_NOT_FOUND (404).
       x-roles: [DOCTOR, ADMIN]
       parameters:
         - {$ref: "#/components/parameters/OfferingId"}
@@ -3849,7 +3859,7 @@ components:
       type: object
       required: [ruleId, offeringId, groupType, enabled]
       properties:
-        ruleId: {type: integer, format: int64}
+        ruleId: {type: integer, format: int64, nullable: true, description: "null = never saved for this group type (warnings off)."}
         offeringId: {type: integer, format: int64}
         groupType: {$ref: "#/components/schemas/GroupType"}
         enabled: {type: boolean}
@@ -3875,7 +3885,7 @@ components:
         groupType: {$ref: "#/components/schemas/GroupType"}
         groupLabel: {type: string, example: "معمل دكتور انتصارات"}
         groupSchedule: {type: string, example: "Wednesday 12:00–14:00"}
-        absenceCount: {type: integer, example: 4, description: "ABSENT marks + one for every 2 LATE."}
+        absenceCount: {type: integer, example: 4, description: "ABSENT marks + unmarked in finished sessions + one for every 2 LATE."}
         lateCount: {type: integer, example: 1}
         absentWeeks:
           type: array
