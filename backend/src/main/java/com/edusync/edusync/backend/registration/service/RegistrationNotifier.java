@@ -1,21 +1,17 @@
 package com.edusync.edusync.backend.registration.service;
 
+import com.edusync.edusync.backend.common.AfterCommitMailer;
 import com.edusync.edusync.backend.users.entity.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class RegistrationNotifier {
 
-    private static final Logger log = LoggerFactory.getLogger(RegistrationNotifier.class);
-
     private final JavaMailSender mailSender;
+    private final AfterCommitMailer afterCommitMailer;
 
     @Value("${spring.mail.username}")
     private String senderEmail;
@@ -23,8 +19,9 @@ public class RegistrationNotifier {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public RegistrationNotifier(JavaMailSender mailSender) {
+    public RegistrationNotifier(JavaMailSender mailSender, AfterCommitMailer afterCommitMailer) {
         this.mailSender = mailSender;
+        this.afterCommitMailer = afterCommitMailer;
     }
 
     public void submitted(User advisor, User student) {
@@ -50,29 +47,15 @@ public class RegistrationNotifier {
                         + "\n\nEduSync Team");
     }
 
+    // Sent in the background after the request is saved (see AfterCommitMailer)
     private void send(String to, String subject, String text) {
-        Runnable task = () -> {
-            try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setFrom(senderEmail);
-                message.setTo(to);
-                message.setSubject(subject);
-                message.setText(text);
-                mailSender.send(message);
-            } catch (Exception e) {
-                log.warn("Could not send registration email to {}", to, e);
-            }
-        };
-
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    task.run();
-                }
-            });
-        } else {
-            task.run();
-        }
+        afterCommitMailer.sendAfterCommit("registration email to " + to, () -> {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(senderEmail);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(text);
+            mailSender.send(message);
+        });
     }
 }

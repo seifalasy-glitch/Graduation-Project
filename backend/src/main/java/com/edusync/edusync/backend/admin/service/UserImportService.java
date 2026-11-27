@@ -3,6 +3,7 @@ package com.edusync.edusync.backend.admin.service;
 import com.edusync.edusync.backend.admin.dto.BulkImportResult;
 import com.edusync.edusync.backend.admin.dto.ImportRowError;
 import com.edusync.edusync.backend.auth.service.EmailService;
+import com.edusync.edusync.backend.common.AfterCommitMailer;
 import com.edusync.edusync.backend.common.UniversityEmailPolicy;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
@@ -14,13 +15,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
@@ -39,8 +36,6 @@ import java.util.regex.Pattern;
 @Service
 public class UserImportService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserImportService.class);
-
     // The 5 columns of the Excel file, in this exact order (from the API contract)
     private static final String[] COLUMNS =
             {"UniversityId", "Email", "FullName", "FullNameAr", "Role"};
@@ -58,6 +53,7 @@ public class UserImportService {
     private final EmailService emailService;
     // Same university-email rule as the single-user form (POST /admin/users)
     private final UniversityEmailPolicy emailPolicy;
+    private final AfterCommitMailer afterCommitMailer;
 
     public UserImportService(
             UserRepository userRepository,
@@ -65,7 +61,8 @@ public class UserImportService {
             PasswordEncoder passwordEncoder,
             TemporaryPasswordGenerator passwordGenerator,
             EmailService emailService,
-            UniversityEmailPolicy emailPolicy
+            UniversityEmailPolicy emailPolicy,
+            AfterCommitMailer afterCommitMailer
     ) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
@@ -73,6 +70,7 @@ public class UserImportService {
         this.passwordGenerator = passwordGenerator;
         this.emailService = emailService;
         this.emailPolicy = emailPolicy;
+        this.afterCommitMailer = afterCommitMailer;
     }
 
     // ===================== Part 1: the empty template =====================
@@ -333,22 +331,14 @@ public class UserImportService {
 
     // ===================== Emails, only after a successful save =====================
 
+    // In the background after commit, so the admin gets the import result at once.
+    // A failed email is only logged; the account is saved and the admin can reset the password.
     private void sendEmailsAfterSave(List<WelcomeEmail> emails) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                for (WelcomeEmail email : emails) {
-                    try {
-                        emailService.sendWelcomeEmail(
-                                email.to(), email.fullName(), email.temporaryPassword());
-                    } catch (Exception e) {
-                        // The account is saved anyway; the admin can reset the password later
-                        log.warn("Could not send the welcome email to {}: {}",
-                                email.to(), e.getMessage());
-                    }
-                }
-            }
-        });
+        for (WelcomeEmail email : emails) {
+            afterCommitMailer.sendAfterCommit("welcome email to " + email.to(), () ->
+                    emailService.sendWelcomeEmail(
+                            email.to(), email.fullName(), email.temporaryPassword()));
+        }
     }
 
     // ===================== Small helpers =====================
