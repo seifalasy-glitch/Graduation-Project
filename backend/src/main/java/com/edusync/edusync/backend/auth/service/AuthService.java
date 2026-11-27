@@ -7,14 +7,13 @@ import com.edusync.edusync.backend.auth.dto.LoginResponse;
 import com.edusync.edusync.backend.auth.dto.MeResponse;
 import com.edusync.edusync.backend.auth.entity.PasswordResetToken;
 import com.edusync.edusync.backend.auth.repository.PasswordResetTokenRepository;
+import com.edusync.edusync.backend.common.AfterCommitMailer;
 import com.edusync.edusync.backend.common.ApiException;
 import com.edusync.edusync.backend.common.DateTimeUtil;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
 import com.edusync.edusync.backend.users.repository.UserRepository;
 import com.edusync.edusync.backend.users.repository.UserRoleRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -36,8 +35,6 @@ import java.util.Locale;
 @Service
 public class AuthService {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
     private final AuthenticationProvider authenticationProvider;
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
@@ -46,6 +43,7 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ResetTokenService resetTokenService;
     private final EmailService emailService;
+    private final AfterCommitMailer afterCommitMailer;
     private final UserDetailsService userDetailsService;
     private final long expiresInSeconds;
 
@@ -58,6 +56,7 @@ public class AuthService {
             PasswordResetTokenRepository passwordResetTokenRepository,
             ResetTokenService resetTokenService,
             EmailService emailService,
+            AfterCommitMailer afterCommitMailer,
             UserDetailsService userDetailsService,
             @Value("${app.jwt.expiration-ms}") long expirationMs
     ) {
@@ -69,6 +68,7 @@ public class AuthService {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.resetTokenService = resetTokenService;
         this.emailService = emailService;
+        this.afterCommitMailer = afterCommitMailer;
         this.userDetailsService = userDetailsService;
         this.expiresInSeconds = expirationMs / 1000;
     }
@@ -233,17 +233,13 @@ public class AuthService {
 
                     passwordResetTokenRepository.save(resetToken);
 
-                    // The API contract says this endpoint always answers 202,
-                    // so a failed email is logged instead of becoming a 500
-                    try {
-                        emailService.sendPasswordResetEmail(
-                                user.getEmail(),
-                                token
-                        );
-                    } catch (Exception e) {
-                        log.warn("Could not send the reset email to {}: {}",
-                                user.getEmail(), e.getMessage());
-                    }
+                    // Sent in the background after the token is committed:
+                    //  - no reset link is emailed if saving the token fails
+                    //  - known and unknown emails answer equally fast, so the 202
+                    //    (always, per the API contract) does not reveal who has an account
+                    //  - a failed email is only logged, never a 500
+                    afterCommitMailer.sendAfterCommit("reset email to " + user.getEmail(),
+                            () -> emailService.sendPasswordResetEmail(user.getEmail(), token));
                 });
     }
 
