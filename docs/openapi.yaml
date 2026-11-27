@@ -3393,8 +3393,8 @@ components:
         name: {type: string, example: Computer Science}
         department: {type: string, example: Mathematics, description: "Department / faculty that owns the program."}
         active: {type: boolean}
-        studentCount: {type: integer}
-        courseCount: {type: integer}
+        studentCount: {type: integer, example: 120, description: "ACTIVE students whose profile is in this program (disabled accounts are not counted)."}
+        courseCount: {type: integer, example: 40, description: "Different courses in this program's study plan (a course planned twice counts once)."}
 
     ProgramInput:
       type: object

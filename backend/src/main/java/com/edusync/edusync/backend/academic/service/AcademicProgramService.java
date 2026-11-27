@@ -9,7 +9,9 @@ import com.edusync.edusync.backend.academic.repository.AcademicProgramRepository
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AcademicProgramService {
@@ -23,10 +25,22 @@ public class AcademicProgramService {
     /** API contract: activeOnly (default true) hides the deactivated programs. */
     @Transactional(readOnly = true)
     public List<AcademicProgramResponse> getPrograms(boolean activeOnly) {
-        return programRepository.findAllByOrderByCodeAsc()
+        List<AcademicProgram> programs = programRepository.findAllByOrderByCodeAsc()
                 .stream()
                 .filter(program -> !activeOnly || Boolean.TRUE.equals(program.getActive()))
-                .map(this::toResponse)
+                .toList();
+
+        if (programs.isEmpty()) {
+            return List.of();
+        }
+
+        // 2 count queries for the whole list, not 2 per program
+        List<Long> ids = programs.stream().map(AcademicProgram::getProgramId).toList();
+        Map<Long, Long> students = toMap(programRepository.countActiveStudents(ids));
+        Map<Long, Long> courses = toMap(programRepository.countPlanCourses(ids));
+
+        return programs.stream()
+                .map(program -> toResponse(program, students, courses))
                 .toList();
     }
 
@@ -59,7 +73,7 @@ public class AcademicProgramService {
                 request.active() == null ? true : request.active()
         );
 
-        return toResponse(programRepository.save(program));
+        return toResponse(programRepository.save(program));   // new program: counts are 0
     }
 
     @Transactional
@@ -105,13 +119,36 @@ public class AcademicProgramService {
         return toResponse(programRepository.save(program));
     }
 
+    /** One program (POST / PATCH answers): looks up its two counts. */
     private AcademicProgramResponse toResponse(AcademicProgram program) {
+        List<Long> id = List.of(program.getProgramId());
+        return toResponse(program,
+                toMap(programRepository.countActiveStudents(id)),
+                toMap(programRepository.countPlanCourses(id)));
+    }
+
+    private AcademicProgramResponse toResponse(
+            AcademicProgram program,
+            Map<Long, Long> studentCounts,
+            Map<Long, Long> courseCounts
+    ) {
         return new AcademicProgramResponse(
                 program.getProgramId(),
                 program.getCode(),
                 program.getName(),
                 program.getDepartment(),
-                program.getActive()
+                program.getActive(),
+                studentCounts.getOrDefault(program.getProgramId(), 0L),  // no row = 0
+                courseCounts.getOrDefault(program.getProgramId(), 0L)
         );
+    }
+
+    /** Rows of [programId, count] from the count queries -> programId -> count. */
+    private static Map<Long, Long> toMap(List<Object[]> rows) {
+        Map<Long, Long> map = new HashMap<>();
+        for (Object[] row : rows) {
+            map.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return map;
     }
 }
