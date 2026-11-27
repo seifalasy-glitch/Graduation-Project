@@ -59,12 +59,12 @@ public final class EnrollmentErrors {
     }
 
     public static ApiException notAStudent() {
-        return of(HttpStatus.BAD_REQUEST, "NOT_A_STUDENT",
+        return of(HttpStatus.CONFLICT, "NOT_A_STUDENT",
                 "This user is not a student");
     }
 
     public static ApiException notADoctor() {
-        return of(HttpStatus.BAD_REQUEST, "NOT_A_DOCTOR",
+        return of(HttpStatus.CONFLICT, "NOT_A_DOCTOR",
                 "This user is not a doctor");
     }
 
@@ -75,7 +75,7 @@ public final class EnrollmentErrors {
     }
 
     public static ApiException wrongOffering() {
-        return of(HttpStatus.BAD_REQUEST, "WRONG_OFFERING",
+        return of(HttpStatus.CONFLICT, "WRONG_OFFERING",
                 "The enrollment belongs to another offering");
     }
 
@@ -85,7 +85,7 @@ public final class EnrollmentErrors {
     }
 
     public static ApiException studentDisabled() {
-        return of(HttpStatus.BAD_REQUEST, "STUDENT_DISABLED",
+        return of(HttpStatus.CONFLICT, "STUDENT_DISABLED",
                 "Cannot enroll a disabled student"
         );
     }

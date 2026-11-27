@@ -97,7 +97,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/courses/*").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/api/offerings").hasRole("ADMIN")
-                        // students/doctors may read one offering (ownership is checked in the service later)
+                        // students/doctors may read one offering; CourseOfferingService checks they are enrolled / teaching
                         .requestMatchers(HttpMethod.GET, "/api/offerings/*").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/offerings").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/offerings/*").hasRole("ADMIN")

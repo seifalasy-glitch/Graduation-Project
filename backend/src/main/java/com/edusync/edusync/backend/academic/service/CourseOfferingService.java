@@ -12,6 +12,7 @@ import com.edusync.edusync.backend.academic.exception.AcademicErrors;
 import com.edusync.edusync.backend.academic.repository.AcademicCourseRepository;
 import com.edusync.edusync.backend.academic.repository.AcademicTermRepository;
 import com.edusync.edusync.backend.academic.repository.CourseOfferingRepository;
+import com.edusync.edusync.backend.enrollment.service.OfferingAccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +25,18 @@ public class CourseOfferingService {
     private final CourseOfferingRepository offeringRepository;
     private final AcademicCourseRepository courseRepository;
     private final AcademicTermRepository termRepository;
+    private final OfferingAccessService access;
 
     public CourseOfferingService(
             CourseOfferingRepository offeringRepository,
             AcademicCourseRepository courseRepository,
-            AcademicTermRepository termRepository
+            AcademicTermRepository termRepository,
+            OfferingAccessService access
     ) {
         this.offeringRepository = offeringRepository;
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
+        this.access = access;
     }
 
     /** API contract: both filters are optional. */
@@ -50,7 +54,15 @@ public class CourseOfferingService {
 
     @Transactional(readOnly = true)
     public CourseOfferingResponse getOfferingById(Long offeringId) {
-        return toResponse(findOffering(offeringId));
+        CourseOffering offering = findOffering(offeringId);
+
+        // API contract: students only if enrolled, doctors only if they teach it.
+        // Answer 404 (not 403) so nobody can probe which offerings exist.
+        if (!access.canRead(offeringId)) {
+            throw AcademicErrors.offeringNotFound();
+        }
+
+        return toResponse(offering);
     }
 
     @Transactional
