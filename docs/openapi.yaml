@@ -1,0 +1,4526 @@
+openapi: 3.0.3
+
+info:
+  title: EduSync API
+  version: 1.0.0-draft
+  description: |
+    API contract between the React frontend and the Spring Boot backend.
+    Built from the final ER diagram (36 tables).
+
+    HOW TO READ THIS FILE
+    - Every endpoint lists who may call it in `x-roles`.
+      Roles: STUDENT, DOCTOR, ADMIN (a admin manages the system).
+      One user can have more than one role (table USER_ROLE).
+    - Every endpoint except login needs the header `Authorization: Bearer <token>`.
+    - The backend enforces roles AND ownership on every request
+      (a doctor only touches groups they teach, a student only sees their own data).
+      Hiding a button in React is a convenience, not security.
+    - Every error has the same shape: { "code": "...", "message": "..." }.
+    - Blank mark = "not graded yet" (JSON null). 0 = a real zero.
+    - Final-exam marks are NOT part of EduSync.
+
+    DECIDED
+    - Login: university email + password. Accounts are created by a admin with a
+      temporary password; on first login the user MUST create a new password
+      (USER.must_change_password). Passwords are stored only as a hash (BCrypt).
+    - Attendance statuses: PRESENT and ABSENT only. Unmarked = null.
+    - QR code rotates every 15 seconds (backend setting `attendance.qr-rotation-seconds`).
+    - The QR window end is stored in ATTENDANCE_SESSION.qr_window_ends_at.
+    - Login token lasts 8 hours. No refresh token: after 8 hours the user logs in again.
+    - Ticket status: OPEN, IN_PROGRESS, RESOLVED. Ticket decision: ACCEPTED, REJECTED.
+    - Enrollment status: ACTIVE, WITHDRAWN, COMPLETED.
+    - Teaching assistants use the DOCTOR role, with the same permissions.
+    - Uploads (materials, submissions): PDF only, at most 10 MB.
+    - Passwords: at least 8 characters with an uppercase letter, a lowercase
+      letter, a digit and a symbol.
+    - Grade emails are in English; see POST /grade-sends for the template.
+    - Control-office file: SeatNo, StudentNameAr, one total ClassWork column
+      (see POST /control-exports). ENROLLMENT.seat_no and USER.full_name_ar added.
+    - Attendance warnings are optional: the doctor turns them on per course,
+      separately for lectures and for labs (practicals), and sets the limit
+      (number of absences). Students who reach it get an email; the department
+      gets one PDF list per course (see /attendance-warnings/report).
+
+    - Students see a mark only after the doctor SENDS it (STUDENT_GRADE.published_score).
+    - Students and enrollments can be imported in bulk from Excel (preview, then commit).
+    - No login lockout. Forgotten passwords: self-service email reset (30-minute single-use link).
+    - Attendance can be LATE: the doctor sets "late after X minutes" per session;
+      for absence warnings every 2 LATE = 1 absence.
+    - Course registration: students pick courses from their program plan (by level and
+      term type) within their personal credit limit; their advisor (a doctor) approves,
+      then an admin gives final acceptance, which creates the enrollments.
+    - Groups (lecture / lab) are managed by the course's doctor; doctors are linked per group.
+      Setup order for a new offering: the admin creates its first group and assigns the
+      doctor to it (POST /groups/{groupId}/teaching-assignments). After that, the doctor
+      can create and manage the other groups of the course.
+    - A DISABLED student can't get new enrollments; enrollments made before the account
+      was disabled are kept.
+    - Grade import: ONE Excel file with all students and a Department column; the backend
+      splits it by program. Approve first, then review and send the emails.
+    - Not in EduSync: quizzes, ticket chat threads / inbox, final-exam marks, letter grades,
+      rubrics, profile photos and user preferences. Profile name/email are set by the admin.
+
+    HTTP STATUS RULE FOR ERRORS (same meaning everywhere)
+    - 400: the request data is invalid (VALIDATION_ERROR, MISSING_FIELD, WEAK_PASSWORD...).
+      `details` says which field.
+    - 403: you may not do this (wrong role, NOT_YOUR_COURSE, NOT_YOUR_ADVISEE...).
+    - 404: the record does not exist, or you are not allowed to see it (*_NOT_FOUND).
+    - 409: the request is valid but the current state blocks it: it already exists
+      (*_EXISTS, ALREADY_*), it is full, the account is disabled (STUDENT_DISABLED,
+      DOCTOR_DISABLED), the user has the wrong role (NOT_A_STUDENT, NOT_A_DOCTOR),
+      or the record is in the wrong state (WRONG_STATE).
+
+    OPEN DECISIONS
+    - None in this file. Backend settings still to choose: file storage
+      (faculty server) and the email service.
+
+  license:
+    name: Proprietary - EduSync graduation project
+servers:
+  - url: http://localhost:8080/api
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Login, first-login password change, current user.
+  - name: Admin - Users
+    description: Admin creates and manages accounts.
+  - name: Admin - Bulk Import
+    description: Create many accounts or enrollments from one Excel file.
+  - name: Academic Structure
+    description: Programs, terms, courses, course offerings, rooms.
+  - name: Enrollments & Groups
+    description: Who studies what, which group they are in, who teaches the group.
+  - name: Registration
+    description: Students choose courses from their program plan; advisor approves, then admin accepts.
+  - name: My Dashboard
+    description: Lists the logged-in user needs to start any screen.
+  - name: Attendance - Doctor
+    description: Open a session, show the rotating QR, mark, finish, correct.
+  - name: Attendance - Student
+    description: Scan the QR and see my own attendance.
+  - name: Attendance Warnings
+    description: Optional automatic warnings when a student's absence passes a limit.
+  - name: Course Materials
+    description: Lecture files per course.
+  - name: Grade Items
+    description: Assessments of a course (midterm, quiz, assignment...).
+  - name: Grades
+    description: Marks per student and assessment, with change history.
+  - name: Assignments & Submissions
+    description: Students upload PDF solutions; doctors download them.
+  - name: Grade Import
+    description: Excel upload -> check -> preview -> approve.
+  - name: Grade Send
+    description: Review and email approved marks to students.
+  - name: Control Export
+    description: Excel file for the university control office.
+  - name: Tickets
+    description: Student requests about a course, answered with a decision.
+  - name: Audit
+    description: Read-only log of important actions.
+  - name: AI Assistant
+    description: Course chatbot (semester 2).
+  - name: Files
+
+    description: Download stored files (permission checked).
+security:
+  - bearerAuth: []
+
+paths:
+  # ================================================================ AUTH
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with university email and password
+      operationId: postAuthLogin
+      description: |
+        Public endpoint (no token needed).
+        If `mustChangePassword` is true, the frontend must open the
+        "create new password" screen. Until the password is changed, every
+        other endpoint answers 403 with code PASSWORD_CHANGE_REQUIRED.
+        The only exceptions are POST /auth/change-password and GET /auth/me
+        (the frontend needs /auth/me to restore the session on this screen).
+        A DISABLED account gets 403 ACCOUNT_DISABLED (on login and on every later call).
+      security: []
+      x-roles: [PUBLIC]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/LoginRequest"}
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/LoginResponse"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change my password (required on first login)
+      operationId: postAuthChangePassword
+      description: |
+        Checks the current (temporary) password, saves the hash of the new one,
+        and sets must_change_password = false. Returns a fresh token.
+        Errors: WRONG_PASSWORD, WEAK_PASSWORD, SAME_AS_OLD.
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ChangePasswordRequest"}
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/LoginResponse"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the logged-in user
+      operationId: getAuthMe
+      description: |
+        The frontend uses `roles` to decide which dashboard and menu to show.
+        Also allowed while `mustChangePassword` is true (it is how the frontend
+        restores the "create new password" screen after a page refresh).
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/User"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Ask for a password-reset email
+      operationId: postAuthForgotPassword
+      description: |
+        Public. Always answers 202, even if the email is unknown (so nobody can
+        check which emails exist). If the account exists, a PASSWORD_RESET_TOKEN
+        is created (only its hash is stored, valid 30 minutes, single use) and a
+        link with the token is emailed to the university address.
+      security: []
+      x-roles: [PUBLIC]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ForgotPasswordRequest"}
+      responses:
+        "202": {description: "If the email exists, a reset link was sent"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Set a new password with the emailed token
+      operationId: postAuthResetPassword
+      description: |
+        Public. Checks the token (exists, not expired, not used), saves the new
+        password hash, marks the token used and sets must_change_password = false.
+        Errors: INVALID_OR_EXPIRED_TOKEN, WEAK_PASSWORD.
+      security: []
+      x-roles: [PUBLIC]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ResetPasswordRequest"}
+      responses:
+        "204": {description: "Password changed; the user can log in"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+
+  # ======================================================= ADMIN - USERS
+  /admin/users:
+    get:
+      tags: [Admin - Users]
+      summary: List / search users
+      operationId: getAdminUsers
+      x-roles: [ADMIN]
+      parameters:
+        - {name: role, in: query, schema: {$ref: "#/components/schemas/Role"}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/UserStatus"}}
+        - name: q
+          in: query
+          description: Search in name, email or university ID.
+          schema: {type: string}
+        - {$ref: "#/components/parameters/Page"}
+        - {$ref: "#/components/parameters/Size"}
+      responses:
+        "200":
+          description: One page of users
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UserPage"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Admin - Users]
+      summary: Create an account
+      operationId: postAdminUsers
+      description: |
+        Creates the user with a temporary password and must_change_password = true.
+        The temporary password is returned ONCE so the admin can hand it over.
+        Errors: EMAIL_TAKEN, UNIVERSITY_ID_TAKEN.
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateUserRequest"}
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CreateUserResponse"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/users/{userId}:
+    parameters:
+      - {$ref: "#/components/parameters/UserId"}
+    get:
+      tags: [Admin - Users]
+      summary: Get one user
+      operationId: getAdminUsersByUserId
+      x-roles: [ADMIN]
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/User"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Admin - Users]
+      summary: Edit a user (name, email, roles, enable/disable)
+      operationId: updateAdminUsersByUserId
+      description: Send only the fields you want to change. Disabling never deletes data.
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/UpdateUserRequest"}
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/User"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/users/{userId}/reset-password:
+    post:
+      tags: [Admin - Users]
+      summary: Reset a forgotten password
+      operationId: postAdminUsersByUserIdResetPassword
+      description: Generates a new temporary password and sets must_change_password = true again.
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/UserId"}
+      responses:
+        "200":
+          description: New temporary password (shown once)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TemporaryPassword"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =============================================== ADMIN - BULK IMPORT
+  /admin/imports/users/template:
+    get:
+      tags: [Admin - Bulk Import]
+      summary: Download the Excel template for new accounts
+      operationId: getAdminImportsUsersTemplate
+      description: "Columns: UniversityId | Email | FullName | FullNameAr | Role (STUDENT or DOCTOR)."
+      x-roles: [ADMIN]
+      responses:
+        "200":
+          description: Excel template
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+
+  /admin/imports/users:
+    post:
+      tags: [Admin - Bulk Import]
+      summary: Import accounts from Excel (preview first, then commit)
+      operationId: postAdminImportsUsers
+      description: |
+        Send the same file twice: first with mode=PREVIEW (nothing is saved, every
+        row is checked), then with mode=COMMIT. COMMIT saves all rows or none: any
+        error blocks the whole file, like the grade import.
+        A row whose UniversityId already exists updates the name fields only.
+        Every NEW account gets a temporary password (must_change_password = true),
+        emailed to its university email, so no password list is ever shown.
+        Row errors: MISSING_FIELD, INVALID_EMAIL, NOT_UNIVERSITY_EMAIL,
+        DUPLICATE_IN_FILE, EMAIL_TAKEN, UNKNOWN_ROLE.
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, mode]
+              properties:
+                file: {type: string, format: binary}
+                mode: {$ref: "#/components/schemas/ImportMode"}
+      responses:
+        "200":
+          description: Check result (PREVIEW) or what was saved (COMMIT)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BulkImportResult"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+  /admin/imports/enrollments/template:
+    get:
+      tags: [Admin - Bulk Import]
+      summary: Download the Excel template for enrolling students in a course
+      operationId: getAdminImportsEnrollmentsTemplate
+      description: |
+        Columns: UniversityId | ProgramCode | SeatNo | LectureGroup | LabGroup.
+        Group columns hold a group label of this course (LabGroup empty if the
+        course has no lab).
+        Error: OFFERING_NOT_FOUND (404).
+      x-roles: [ADMIN]
+      parameters:
+        - name: offeringId
+          in: query
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200":
+          description: Excel template
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+  /admin/imports/enrollments:
+    post:
+      tags: [Admin - Bulk Import]
+      summary: Enroll many students in one course and put them in groups
+      operationId: postAdminImportsEnrollments
+      description: |
+        Same PREVIEW / COMMIT flow as the account import. For each row it creates
+        the ENROLLMENT (with program and seat number) and the GROUP_MEMBERSHIPs.
+        Students already enrolled get their program, seat number and groups
+        updated. All rows or none.
+        Error: OFFERING_NOT_FOUND (404).
+        Row errors: MISSING_FIELD, UNKNOWN_STUDENT, STUDENT_DISABLED, UNKNOWN_PROGRAM,
+        UNKNOWN_GROUP, DUPLICATE_IN_FILE, DUPLICATE_SEAT_NO, OFFERING_FULL,
+        ENROLLMENT_COMPLETED (a COMPLETED enrollment can't be changed),
+        GROUP_PERIOD_CONFLICT (the student is already in another group of the same type).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, mode, offeringId]
+              properties:
+                offeringId: {type: integer, format: int64}
+                file: {type: string, format: binary}
+                mode: {$ref: "#/components/schemas/ImportMode"}
+      responses:
+        "200":
+          description: Check result (PREVIEW) or what was saved (COMMIT)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/BulkImportResult"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+  # ================================================== ACADEMIC STRUCTURE
+  /programs:
+    get:
+      tags: [Academic Structure]
+      summary: List academic programs
+      operationId: getPrograms
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/ActiveOnly"}
+      responses:
+        "200":
+          description: Programs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Program"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Academic Structure]
+      summary: Create a program
+      description: |
+        Errors: VALIDATION_ERROR (400), PROGRAM_CODE_EXISTS (409).
+      operationId: postPrograms
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ProgramInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Program"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+  /programs/{programId}:
+    patch:
+      tags: [Academic Structure]
+      summary: Edit or deactivate a program
+      description: |
+        Send only the fields you want to change. Deactivating never deletes data.
+        Errors: PROGRAM_NOT_FOUND (404), VALIDATION_ERROR (400), PROGRAM_CODE_EXISTS (409).
+      operationId: updateProgramsByProgramId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/ProgramId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ProgramInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Program"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /terms:
+    get:
+      tags: [Academic Structure]
+      summary: List academic terms
+      operationId: getTerms
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Terms, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Term"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Academic Structure]
+      summary: Create a term
+      description: |
+        Unique rule: (academicYear, termType). endDate must not be before startDate.
+        Errors: VALIDATION_ERROR (400), TERM_EXISTS (409).
+      operationId: postTerms
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TermInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Term"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "409": {$ref: "#/components/responses/Conflict"}
+  /terms/{termId}:
+    patch:
+      tags: [Academic Structure]
+      summary: Edit a term
+      description: |
+        Send only the fields you want to change.
+        Errors: TERM_NOT_FOUND (404), VALIDATION_ERROR (400), TERM_EXISTS (409).
+      operationId: updateTermsByTermId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/TermId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TermInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Term"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /courses:
+    get:
+      tags: [Academic Structure]
+      summary: List courses (the catalog, not a specific semester)
+      operationId: getCourses
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - name: q
+          in: query
+          description: Search by code or title.
+          schema: {type: string}
+      responses:
+        "200":
+          description: Courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Course"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Academic Structure]
+      summary: Create a course
+      description: |
+        creditHours must be at least 1.
+        Errors: VALIDATION_ERROR (400), COURSE_CODE_EXISTS (409).
+      operationId: postCourses
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CourseInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Course"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+  /courses/{courseId}:
+    patch:
+      tags: [Academic Structure]
+      summary: Edit a course
+      description: |
+        Send only the fields you want to change.
+        Errors: COURSE_NOT_FOUND (404), VALIDATION_ERROR (400), COURSE_CODE_EXISTS (409).
+      operationId: updateCoursesByCourseId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/CourseId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CourseInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Course"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /offerings:
+    get:
+      tags: [Academic Structure]
+      summary: List course offerings (a course given in a specific term and section)
+      operationId: getOfferings
+      x-roles: [ADMIN]
+      parameters:
+        - {name: termId, in: query, schema: {type: integer, format: int64}}
+        - {name: courseId, in: query, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Offerings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Offering"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Academic Structure]
+      summary: Open a course in a term
+      operationId: postOfferings
+      description: |
+        Unique rule: (course, term, section). An empty section also counts only once.
+        Errors: COURSE_NOT_FOUND (404), TERM_NOT_FOUND (404), VALIDATION_ERROR (400),
+        OFFERING_EXISTS (409).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/OfferingInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Offering"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /offerings/{offeringId}:
+    parameters:
+      - {$ref: "#/components/parameters/OfferingId"}
+    get:
+      tags: [Academic Structure]
+      summary: Get one offering
+      operationId: getOfferingsByOfferingId
+      description: |
+        Students may read it only if enrolled; doctors only if they teach one of its groups.
+        Error: OFFERING_NOT_FOUND (404), also when the offering is not visible to you.
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Offering
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Offering"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Academic Structure]
+      summary: Edit an offering (capacity, coursework maximum, section)
+      description: |
+        Send only the fields you want to change.
+        Errors: OFFERING_NOT_FOUND (404), VALIDATION_ERROR (400), OFFERING_EXISTS (409).
+      operationId: updateOfferingsByOfferingId
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/OfferingUpdate"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Offering"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /rooms:
+    get:
+      tags: [Academic Structure]
+      summary: List rooms (with their network profile)
+      operationId: getRooms
+      description: A room is only a physical place. It does not decide the attendance method.
+      x-roles: [DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Room"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Academic Structure]
+      summary: Add a room
+      description: |
+        Network profile: LOCAL_ROUTER rooms need ssid and routerMac; CAMPUS_WIFI rooms
+        need subnet. The fields of the other mode are cleared.
+        Errors: VALIDATION_ERROR (400), ROOM_CODE_EXISTS (409).
+      operationId: postRooms
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RoomInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Room"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+  /rooms/{roomId}:
+    patch:
+      tags: [Academic Structure]
+      summary: Edit a room or its network profile
+      description: |
+        Send only the fields you want to change. The network rules of POST /rooms apply
+        to the result.
+        Errors: ROOM_NOT_FOUND (404), VALIDATION_ERROR (400), ROOM_CODE_EXISTS (409).
+      operationId: patchRoomsByRoomId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/RoomId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RoomUpdate"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Room"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+
+        "409": {$ref: "#/components/responses/Conflict"}
+  # ================================================ ENROLLMENTS & GROUPS
+  /offerings/{offeringId}/enrollments:
+    parameters:
+      - {$ref: "#/components/parameters/OfferingId"}
+    get:
+      tags: [Enrollments & Groups]
+      summary: Students enrolled in an offering
+      description: |
+        A doctor sees only courses they teach.
+        Errors: OFFERING_NOT_FOUND (404), NOT_YOUR_COURSE (403), VALIDATION_ERROR (400, unknown status).
+      operationId: getOfferingsByOfferingIdEnrollments
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {name: programId, in: query, schema: {type: integer, format: int64}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/EnrollmentStatus"}}
+      responses:
+        "200":
+          description: Enrollments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Enrollment"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      tags: [Enrollments & Groups]
+      summary: Enroll a student in the offering
+      operationId: postOfferingsByOfferingIdEnrollments
+      description: |
+        Unique rule: (student, offering). A DISABLED student can't be enrolled.
+        Errors: OFFERING_NOT_FOUND (404), USER_NOT_FOUND (404), PROGRAM_NOT_FOUND (404),
+        NOT_A_STUDENT (409), STUDENT_DISABLED (409), ALREADY_ENROLLED (409), OFFERING_FULL (409).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EnrollmentInput"}
+      responses:
+        "201":
+          description: Enrolled
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Enrollment"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /enrollments/{enrollmentId}:
+    patch:
+      tags: [Enrollments & Groups]
+      summary: Change an enrollment (status or program)
+      operationId: updateEnrollmentsByEnrollmentId
+      description: |
+        Withdrawing keeps all history (attendance, marks). Nothing is deleted.
+        Setting the status back to ACTIVE re-checks the student and the seats.
+        Errors: ENROLLMENT_NOT_FOUND (404), PROGRAM_NOT_FOUND (404), VALIDATION_ERROR (400),
+        STUDENT_DISABLED (409), OFFERING_FULL (409).
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/EnrollmentId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EnrollmentUpdate"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Enrollment"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /offerings/{offeringId}/groups:
+    parameters:
+      - {$ref: "#/components/parameters/OfferingId"}
+    get:
+      tags: [Enrollments & Groups]
+      summary: Groups of an offering (lecture and practical groups)
+      description: |
+        A doctor sees only courses they teach.
+        Errors: OFFERING_NOT_FOUND (404), NOT_YOUR_COURSE (403).
+      operationId: getOfferingsByOfferingIdGroups
+      x-roles: [DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Group"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      tags: [Enrollments & Groups]
+      summary: Create a group (lecture or lab)
+      description: |
+        The course's doctor (or an admin) manages groups. A doctor must already teach
+        a group of this course, so the FIRST group of a new offering is always created
+        by an admin, who then assigns its doctor (POST /groups/{groupId}/teaching-assignments).
+        After that, the doctor can create the other groups.
+        Unique rule: (offering, groupType, label).
+        Errors: OFFERING_NOT_FOUND (404), NOT_YOUR_COURSE (403), VALIDATION_ERROR (400),
+        GROUP_EXISTS (409).
+      operationId: postOfferingsByOfferingIdGroups
+      x-roles: [DOCTOR, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GroupInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Group"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /groups/{groupId}:
+    patch:
+      tags: [Enrollments & Groups]
+      summary: Rename a group
+      description: |
+        Rename a group, or change its type, day or time. Send only what changes.
+        Errors: GROUP_NOT_FOUND (404), NOT_YOUR_COURSE (403), VALIDATION_ERROR (400),
+        GROUP_EXISTS (409), ALREADY_MEMBER (409, a member would end up in two groups of the same type).
+      operationId: updateGroupsByGroupId
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/GroupId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GroupInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Group"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /groups/{groupId}/members:
+    parameters:
+      - {$ref: "#/components/parameters/GroupId"}
+    get:
+      tags: [Enrollments & Groups]
+      summary: Students in a group
+      operationId: getGroupsByGroupIdMembers
+      description: |
+        By default only current members. `at` shows the members on a past date.
+        Errors: GROUP_NOT_FOUND (404), NOT_YOUR_COURSE (403).
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - name: at
+          in: query
+          schema: {type: string, format: date}
+      responses:
+        "200":
+          description: Memberships
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GroupMembership"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      tags: [Enrollments & Groups]
+      summary: Put a student in a group
+      operationId: postGroupsByGroupIdMembers
+      description: |
+        The enrollment must belong to the same offering as the group.
+        A student can be in only one current group of each type (lecture / lab) per course.
+        To MOVE a student, end the old membership (PATCH) and add a new one,
+        so the history of which group they were in is kept. A student who left a group
+        can join it again later.
+        Errors: GROUP_NOT_FOUND (404), ENROLLMENT_NOT_FOUND (404), NOT_YOUR_COURSE (403),
+        VALIDATION_ERROR (400), WRONG_OFFERING (409), ALREADY_MEMBER (409).
+      x-roles: [DOCTOR, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MembershipInput"}
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GroupMembership"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /group-memberships/{membershipId}:
+    patch:
+      tags: [Enrollments & Groups]
+      summary: End a membership (student leaves the group)
+      description: |
+        endsAt must be after startsAt. The membership stays in history; it is not deleted.
+        Errors: MEMBERSHIP_NOT_FOUND (404), NOT_YOUR_COURSE (403), VALIDATION_ERROR (400),
+        ALREADY_MEMBER (409).
+      operationId: updateGroupMembershipsByMembershipId
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/MembershipId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EndPeriodRequest"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GroupMembership"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /groups/{groupId}/teaching-assignments:
+    parameters:
+      - {$ref: "#/components/parameters/GroupId"}
+    get:
+      tags: [Enrollments & Groups]
+      summary: Doctors who teach (or taught) a group
+      operationId: getGroupsByGroupIdTeachingAssignments
+      description: |
+        A doctor may read assignments only for a course they teach.
+        Errors: GROUP_NOT_FOUND (404), NOT_YOUR_COURSE (403).
+      x-roles: [DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Teaching assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/TeachingAssignment"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    post:
+      tags: [Enrollments & Groups]
+      summary: Assign a doctor to teach a group
+      operationId: postGroupsByGroupIdTeachingAssignments
+      description: |
+        Only an admin assigns doctors. Assigning a doctor to a group of an offering
+        is what lets that doctor manage the offering's groups.
+        The user must be ACTIVE and have the DOCTOR role.
+        Errors: GROUP_NOT_FOUND (404), USER_NOT_FOUND (404), NOT_A_DOCTOR (409),
+        DOCTOR_DISABLED (409), ALREADY_ASSIGNED (409).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TeachingAssignmentInput"}
+      responses:
+        "201":
+          description: Assigned
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TeachingAssignment"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /teaching-assignments/{assignmentId}:
+    patch:
+      tags: [Enrollments & Groups]
+      summary: End a teaching assignment (doctor stops teaching the group)
+      operationId: updateTeachingAssignmentsByAssignmentId
+      description: |
+        endsAt must be after startsAt. The assignment remains in history; it is not deleted.
+        Errors: ASSIGNMENT_NOT_FOUND (404), VALIDATION_ERROR (400).
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/TeachingAssignmentId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EndPeriodRequest"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TeachingAssignment"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  # ======================================================== REGISTRATION
+  /admin/students/{userId}/profile:
+    parameters:
+      - {$ref: "#/components/parameters/UserId"}
+    get:
+      tags: [Registration]
+      summary: A student's academic profile (program, level, credit limit, advisor)
+      description: |
+        Errors: USER_NOT_FOUND (404), PROFILE_NOT_FOUND (404).
+      operationId: getAdminStudentsByUserIdProfile
+      x-roles: [ADMIN]
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StudentProfile"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    put:
+      tags: [Registration]
+      summary: Set a student's program, level, max credit hours and advisor
+      operationId: putAdminStudentsByUserIdProfile
+      description: |
+        The user must be a STUDENT. The advisor must be an ACTIVE user with the DOCTOR role.
+        Errors: USER_NOT_FOUND (404), PROGRAM_NOT_FOUND (404), VALIDATION_ERROR (400),
+        NOT_A_STUDENT (409), NOT_A_DOCTOR (409), DOCTOR_DISABLED (409).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/StudentProfileInput"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StudentProfile"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /programs/{programId}/plan-courses:
+    parameters:
+      - {$ref: "#/components/parameters/ProgramId"}
+    get:
+      tags: [Registration]
+      summary: The program's study plan (which courses each level takes in each term)
+      description: |
+        Errors: PROGRAM_NOT_FOUND (404), VALIDATION_ERROR (400, unknown termType).
+      operationId: getProgramsByProgramIdPlanCourses
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {name: level, in: query, schema: {type: integer, minimum: 1}}
+        - {name: termType, in: query, schema: {$ref: "#/components/schemas/TermType"}}
+      responses:
+        "200":
+          description: Plan courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/PlanCourse"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      tags: [Registration]
+      summary: Add a course to the program plan
+      operationId: postProgramsByProgramIdPlanCourses
+      description: |
+        Unique rule: (program, level, termType, course).
+        Errors: PROGRAM_NOT_FOUND (404), COURSE_NOT_FOUND (404), VALIDATION_ERROR (400),
+        ALREADY_IN_PLAN (409).
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PlanCourseInput"}
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PlanCourse"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /plan-courses/{planCourseId}:
+    delete:
+      tags: [Registration]
+      summary: Remove a course from the program plan
+      description: |
+        Error: PLAN_COURSE_NOT_FOUND (404).
+      operationId: deletePlanCoursesByPlanCourseId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/PlanCourseId"}
+      responses:
+        "204": {description: Removed}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /me/registration/available:
+    get:
+      tags: [Registration]
+      summary: Courses I can register this term
+      operationId: getMeRegistrationAvailable
+      description: |
+        Offerings of the term whose course is in MY program plan for MY level and
+        this term's type (Fall/Spring/Summer), with seats, credits and schedule.
+        Errors: TERM_NOT_FOUND (404), PROFILE_INCOMPLETE (409, my program, level or
+        credit limit is not set yet).
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/TermIdQuery"}
+      responses:
+        "200":
+          description: Available offerings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AvailableOffering"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+  /me/registration:
+    get:
+      tags: [Registration]
+      summary: My registration request for a term
+      description: |
+        Error: TERM_NOT_FOUND (404).
+      operationId: getMeRegistration
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/TermIdQuery"}
+      responses:
+        "200":
+          description: My request (status DRAFT if not submitted yet)
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    put:
+      tags: [Registration]
+      summary: Save my chosen courses (draft)
+      operationId: putMeRegistration
+      description: |
+        Replaces the list of chosen offerings. Allowed while DRAFT or RETURNED.
+        Checked: each offering is available to me, no two sections of the same
+        course, no schedule clash, total credits <= my max_credit_hours, seats left.
+        Errors: TERM_NOT_FOUND (404), VALIDATION_ERROR (400), PROFILE_INCOMPLETE (409),
+        ALREADY_SUBMITTED (409), NOT_AVAILABLE (409), ALREADY_ENROLLED (409),
+        SAME_COURSE_TWICE (409), CREDIT_LIMIT_EXCEEDED (409), SCHEDULE_CLASH (409),
+        OFFERING_FULL (409).
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SaveRegistrationRequest"}
+      responses:
+        "200":
+          description: Saved draft
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+  /me/registration/submit:
+    post:
+      tags: [Registration]
+      summary: Submit my registration to my advisor
+      operationId: postMeRegistrationSubmit
+      description: |
+        Status DRAFT/RETURNED -> SUBMITTED. The advisor is emailed.
+        All the checks of PUT /me/registration run again.
+        Errors: TERM_NOT_FOUND (404), PROFILE_INCOMPLETE (409), ALREADY_SUBMITTED (409),
+        EMPTY_REQUEST (409), NO_ADVISOR (409), ADVISOR_DISABLED (409), plus the errors
+        of PUT /me/registration.
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [termId]
+              properties:
+                termId: {type: integer, format: int64}
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "404": {$ref: "#/components/responses/NotFound"}
+  /advisor/registrations:
+    get:
+      tags: [Registration]
+      summary: Registration requests of my advisees (advisor doctor)
+      operationId: getAdvisorRegistrations
+      x-roles: [DOCTOR]
+      parameters:
+        - {name: termId, in: query, schema: {type: integer, format: int64}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/RegistrationStatus"}}
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /admin/registrations:
+    get:
+      tags: [Registration]
+      summary: Registration requests waiting for final acceptance
+      operationId: getAdminRegistrations
+      x-roles: [ADMIN]
+      parameters:
+        - {name: termId, in: query, schema: {type: integer, format: int64}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/RegistrationStatus"}}
+        - {name: programId, in: query, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /registrations/{requestId}:
+    get:
+      tags: [Registration]
+      summary: One registration request
+      operationId: getRegistrationsByRequestId
+      description: |
+        The student, their advisor and admins can read it. The advisor can't see a DRAFT.
+        Error: REQUEST_NOT_FOUND (404), also when you may not see it.
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/RequestId"}
+      responses:
+        "200":
+          description: Request with its courses
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /registrations/{requestId}/advisor-decision:
+    post:
+      tags: [Registration]
+      summary: Advisor approves or returns the request
+      operationId: postRegistrationsByRequestIdAdvisorDecision
+      description: |
+        Only the student's advisor, only when SUBMITTED.
+        APPROVE -> ADVISOR_APPROVED (goes to the admin). RETURN -> RETURNED (the
+        student edits and submits again); a note is required when returning.
+        Errors: REQUEST_NOT_FOUND (404), NOT_YOUR_ADVISEE (403), VALIDATION_ERROR (400),
+        WRONG_STATE (409).
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/RequestId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RegistrationDecision"}
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /registrations/{requestId}/admin-decision:
+    post:
+      tags: [Registration]
+      summary: Admin gives final acceptance (creates the enrollments)
+      operationId: postRegistrationsByRequestIdAdminDecision
+      description: |
+        Only when ADVISOR_APPROVED. APPROVE -> APPROVED: one ENROLLMENT (status
+        ACTIVE, program from the student profile) is created per chosen offering,
+        seats are re-checked. RETURN -> RETURNED with a note. The student is emailed.
+        Seat numbers and groups are set afterwards (enrollment import or group screens).
+        Errors: REQUEST_NOT_FOUND (404), VALIDATION_ERROR (400), WRONG_STATE (409),
+        EMPTY_REQUEST (409), STUDENT_DISABLED (409), PROFILE_INCOMPLETE (409),
+        ALREADY_ENROLLED (409), OFFERING_FULL (409), plus the checks of PUT /me/registration.
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/RequestId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RegistrationDecision"}
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RegistrationRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  # ======================================================== MY DASHBOARD
+  /admin/stats:
+    get:
+      tags: [My Dashboard]
+      summary: Numbers for the admin home page
+      operationId: getAdminStats
+      x-roles: [ADMIN]
+      responses:
+        "200":
+          description: Counts
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdminStats"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /me/teaching-summary:
+    get:
+      tags: [My Dashboard]
+      summary: Numbers for the doctor home page
+      operationId: getMeTeachingSummary
+      description: Only real EduSync data for the courses I teach this term.
+      x-roles: [DOCTOR]
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TeachingSummary"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /me/upcoming:
+    get:
+      tags: [My Dashboard]
+      summary: My upcoming deadlines (student home page)
+      operationId: getMeUpcoming
+      description: Open assignments ordered by due date, plus registration status if a request is waiting.
+      x-roles: [STUDENT]
+      parameters:
+        - name: days
+          in: query
+          description: How far ahead to look.
+          schema: {type: integer, default: 14, maximum: 60}
+      responses:
+        "200":
+          description: Items, soonest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/UpcomingItem"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /me/enrollments:
+    get:
+      tags: [My Dashboard]
+      summary: My courses this term (student home screen)
+      operationId: getMeEnrollments
+      description: Gives the `offeringId` and `enrollmentId` every other student screen needs.
+      x-roles: [STUDENT]
+      parameters:
+        - name: termId
+          in: query
+          description: Default = current term.
+          schema: {type: integer, format: int64}
+      responses:
+        "200":
+          description: My enrollments with course and group info
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/MyEnrollment"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/teaching-groups:
+    get:
+      tags: [My Dashboard]
+      summary: Groups I currently teach (doctor home screen)
+      operationId: getMeTeachingGroups
+      description: Fills the "choose group" list for attendance, materials and grades.
+      x-roles: [DOCTOR]
+      parameters:
+        - name: termId
+          in: query
+          description: Default = current term.
+          schema: {type: integer, format: int64}
+      responses:
+        "200":
+          description: My teaching groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/TeachingGroup"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ================================================= ATTENDANCE (DOCTOR)
+  /attendance/sessions:
+    post:
+      tags: [Attendance - Doctor]
+      summary: Open an attendance session (one class meeting)
+      operationId: postAttendanceSessions
+      description: |
+        The doctor must currently teach the group (TEACHING_ASSIGNMENT).
+        The doctor chooses the method per session. For the QR methods the doctor
+        also chooses how many minutes students can scan; after that the session
+        becomes MANUAL_ONLY automatically. For MANUAL, omit `qrWindowMinutes`.
+        The backend saves starts_at + qrWindowMinutes in qr_window_ends_at.
+        Errors: NOT_YOUR_GROUP, SESSION_ALREADY_OPEN.
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateSessionRequest"}
+      responses:
+        "201":
+          description: Session opened
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AttendanceSession"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /groups/{groupId}/attendance-sessions:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Past and current sessions of a group
+      operationId: getGroupsByGroupIdAttendanceSessions
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/GroupId"}
+      responses:
+        "200":
+          description: Sessions, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceSession"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Get session state
+      operationId: getAttendanceSessionsBySessionId
+      description: The doctor's screen polls this to know when the QR window has closed.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AttendanceSession"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}/qr:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Get the current rotating QR code
+      operationId: getAttendanceSessionsBySessionIdQr
+      description: |
+        The doctor's screen calls this every 15 seconds (the rotation interval)
+        and draws `token` as a QR image. Only a hash of the token is stored (QR_CHALLENGE).
+        Errors: NOT_A_QR_SESSION, WINDOW_CLOSED.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Current QR challenge
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/QrChallenge"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}/roster:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Roster of the session with live marks
+      operationId: getAttendanceSessionsBySessionIdRoster
+      description: |
+        Students who were members of the session's group at the session time.
+        `status: null` means unmarked (not the same as ABSENT).
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      responses:
+        "200":
+          description: Roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/RosterEntry"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}/records/{enrollmentId}:
+    put:
+      tags: [Attendance - Doctor]
+      summary: Mark one student manually (before the session is finished)
+      operationId: putAttendanceSessionsBySessionIdRecordsByEnrollmentId
+      description: |
+        Writes the same single ATTENDANCE_RECORD a QR scan would write
+        (unique per session + student), so nobody is counted twice.
+        Errors: SESSION_FINISHED (use the correction endpoint), NOT_IN_GROUP.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/EnrollmentId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MarkRequest"}
+      responses:
+        "200":
+          description: Updated roster entry
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RosterEntry"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}/finish:
+    post:
+      tags: [Attendance - Doctor]
+      summary: Finish attendance
+      operationId: postAttendanceSessionsBySessionIdFinish
+      description: |
+        Ordinary marking stops. Optionally marks every unmarked student ABSENT
+        (default false). The UI should first show how many would be affected.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/FinishRequest"}
+      responses:
+        "200":
+          description: Session finished
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/FinishResponse"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/sessions/{sessionId}/records/{enrollmentId}/correction:
+    post:
+      tags: [Attendance - Doctor]
+      summary: Correct a mark AFTER the session was finished
+      operationId: postAttendanceSessionsBySessionIdRecordsByEnrollmentIdCorrection
+      description: |
+        A reason from a fixed list is required. Old value, new value, doctor and
+        reason are saved in ATTENDANCE_CHANGE.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SessionId"}
+        - {$ref: "#/components/parameters/EnrollmentId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CorrectionRequest"}
+      responses:
+        "200":
+          description: Corrected entry
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RosterEntry"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /attendance/records/{recordId}/changes:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Correction history of one attendance mark
+      operationId: getAttendanceRecordsByRecordIdChanges
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/RecordId"}
+      responses:
+        "200":
+          description: Changes, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceChange"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /offerings/{offeringId}/attendance-summary:
+    get:
+      tags: [Attendance - Doctor]
+      summary: Attendance totals per student in a course
+      operationId: getOfferingsByOfferingIdAttendanceSummary
+      description: For the doctor's report screen. Doctors see only the groups they teach.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+        - {name: groupId, in: query, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: One row per student
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceSummaryRow"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ================================================ ATTENDANCE (STUDENT)
+  /attendance/check-in:
+    post:
+      tags: [Attendance - Student]
+      summary: Student scans the QR code
+      operationId: postAttendanceCheckIn
+      description: |
+        The backend checks: the QR token is valid and not expired (15 s), the QR
+        window is open, the student currently belongs to the session's group,
+        and was not already marked. For LOCAL_WIFI_QR it also checks the network
+        (the room's router SSID/MAC or campus subnet). If the scan is more than the
+        session's lateAfterMinutes after the start, the status is LATE, else PRESENT.
+        Errors: QR_EXPIRED, WINDOW_CLOSED, NOT_IN_GROUP, ALREADY_MARKED, NETWORK_NOT_ALLOWED.
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CheckInRequest"}
+      responses:
+        "200":
+          description: Attendance recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CheckInResponse"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/attendance:
+    get:
+      tags: [Attendance - Student]
+      summary: My attendance in one course
+      operationId: getMeAttendance
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingIdQuery"}
+      responses:
+        "200":
+          description: My attendance history
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MyAttendance"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ================================================= ATTENDANCE WARNINGS
+  /offerings/{offeringId}/attendance-warning-rules:
+    get:
+      tags: [Attendance Warnings]
+      summary: Warning settings of a course (lecture and lab)
+      operationId: getOfferingsByOfferingIdAttendanceWarningRules
+      description: One rule per group type that exists in the course. A course with no lab has only the LECTURE rule.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+      responses:
+        "200":
+          description: Rules (enabled or not)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceWarningRule"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+
+  /offerings/{offeringId}/attendance-warning-rules/{groupType}:
+    put:
+      tags: [Attendance Warnings]
+      summary: Turn warnings on or off for lectures or labs, and set the limit
+      operationId: putOfferingsByOfferingIdAttendanceWarningRulesByGroupType
+      description: |
+        Off by default; there is no default limit: the doctor sets
+        `absenceLimit` (a number of absences) when turning it on.
+        When on, the backend re-checks the course every time a session of that
+        type is finished or corrected. Absences = ABSENT marks + one for every
+        2 LATE marks. The first time a student's absences reach the limit, one ATTENDANCE_WARNING row is created and the student
+        is emailed (once; it is never repeated for the same rule).
+
+        Warning email (English):
+          Subject: Attendance warning – {courseCode} {courseTitle}
+          Dear {studentFullName},
+          You have been absent {absenceCount} times from the {lecture|lab} of
+          {courseCode} {courseTitle} (weeks {absentWeeks}). The limit set by
+          Dr. {doctorFullName} is {absenceLimit} absences.
+          Please contact your doctor if you think this is wrong.
+
+        Errors: NO_SUCH_GROUP_TYPE (e.g. PRACTICAL in a course with no lab),
+        NOT_YOUR_COURSE, LIMIT_REQUIRED (enabled without absenceLimit).
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+        - name: groupType
+          in: path
+          required: true
+          schema: {$ref: "#/components/schemas/GroupType"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AttendanceWarningRuleInput"}
+      responses:
+        "200":
+          description: Saved rule
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AttendanceWarningRule"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+  /offerings/{offeringId}/attendance-warnings:
+    get:
+      tags: [Attendance Warnings]
+      summary: Students who passed the absence limit in a course
+      operationId: getOfferingsByOfferingIdAttendanceWarnings
+      description: Counts and weeks are current (recalculated), not frozen at the time of the warning.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+        - {name: groupType, in: query, schema: {$ref: "#/components/schemas/GroupType"}}
+      responses:
+        "200":
+          description: Warned students, most absences first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceWarning"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+
+  /offerings/{offeringId}/attendance-warnings/report:
+    get:
+      tags: [Attendance Warnings]
+      summary: Download the department's absence list (PDF)
+      operationId: getOfferingsByOfferingIdAttendanceWarningsReport
+      description: |
+        The official list (كشف الطلاب المتجاوزين حد الغياب), A4 landscape, Arabic,
+        built from the faculty's sample:
+          Header: كلية العلوم / قسم {department} / شعبة {program};
+                  title "كشف الطلاب المتجاوزين حد الغياب في — {courseCode}",
+                  "{courseTitle} — {term} — للعام الجامعي {academicYear}"
+          Columns: م | الاسم (USER.full_name_ar) | الشعبة (program) |
+                   المعمل والموعد (group label — day start–end) |
+                   مرات الغياب (absence count) | أسابيع الغياب (week numbers)
+          Footer: two signature blocks (program coordinator, head of department),
+                  names taken from backend settings.
+        Week number = week of the term the session fell in (from ACADEMIC_TERM.start_date).
+        Generated on demand; nothing is stored.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+        - name: groupType
+          in: query
+          required: true
+          schema: {$ref: "#/components/schemas/GroupType"}
+      responses:
+        "200":
+          description: The PDF list
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+  /me/attendance-warnings:
+    get:
+      tags: [Attendance Warnings]
+      summary: My attendance warnings (student)
+      operationId: getMeAttendanceWarnings
+      x-roles: [STUDENT]
+      responses:
+        "200":
+          description: My warnings, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AttendanceWarning"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  # ===================================================== COURSE MATERIALS
+  /offerings/{offeringId}/materials:
+    parameters:
+      - {$ref: "#/components/parameters/OfferingId"}
+    get:
+      tags: [Course Materials]
+      summary: Lecture files of a course
+      operationId: getOfferingsByOfferingIdMaterials
+      description: Students see only approved materials. Doctors also see their unapproved uploads.
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Materials ordered by lecture number
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Material"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Course Materials]
+      summary: Upload a lecture file (PDF)
+      operationId: postOfferingsByOfferingIdMaterials
+      description: |
+        Saves the file (FILE_ASSET) and the material record. It stays hidden from
+        students until approved. PDF only, at most 10 MB.
+        Errors: FILE_TOO_LARGE, UNSUPPORTED_FILE_TYPE.
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title]
+              properties:
+                file: {type: string, format: binary}
+                title: {type: string, example: "Lecture 3 - Normalization"}
+                lectureNo: {type: integer, example: 3}
+                kind: {$ref: "#/components/schemas/MaterialKind"}
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Material"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /materials/{materialId}/approve:
+    post:
+      tags: [Course Materials]
+      summary: Publish a material to students
+      operationId: postMaterialsByMaterialIdApprove
+      description: Sets approved_at. Approved materials are also indexed for the AI assistant.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/MaterialId"}
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Material"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /materials/{materialId}:
+    patch:
+      tags: [Course Materials]
+      summary: Edit a material or switch it in/out of the AI knowledge base
+      operationId: patchMaterialsByMaterialId
+      description: "aiEnabled can only be true when aiStatus is PARSED (error AI_NOT_READY). Changes apply to new AI conversations."
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/MaterialId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MaterialUpdate"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Material"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+    delete:
+      tags: [Course Materials]
+      summary: Remove a material
+      operationId: deleteMaterialsByMaterialId
+      description: Soft delete (FILE_ASSET.deleted_at). The AI stops using its content.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/MaterialId"}
+      responses:
+        "204": {description: "Removed"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================= GRADE ITEMS
+  /offerings/{offeringId}/grade-items:
+    parameters:
+      - {$ref: "#/components/parameters/OfferingId"}
+    get:
+      tags: [Grade Items]
+      summary: Assessments of a course
+      operationId: getOfferingsByOfferingIdGradeItems
+      description: Students see only items that apply to their group.
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      responses:
+        "200":
+          description: Grade items
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GradeItem"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Grade Items]
+      summary: Create an assessment
+      operationId: postOfferingsByOfferingIdGradeItems
+      description: |
+        scope OFFERING = for every student of the course.
+        scope GROUP = only for the listed groups (GRADE_ITEM_GROUP); the doctor
+        must teach them. If assessmentType is ASSIGNMENT, `dueAt` is required and
+        an ASSIGNMENT row is created so students can upload submissions.
+        Errors: MAX_EXCEEDS_COURSEWORK (sum of maxima > offering coursework_max).
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GradeItemInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeItem"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-items/{gradeItemId}:
+    parameters:
+      - {$ref: "#/components/parameters/GradeItemId"}
+    patch:
+      tags: [Grade Items]
+      summary: Edit an assessment
+      operationId: updateGradeItemsByGradeItemId
+      description: "Error: MAX_BELOW_EXISTING_MARK (cannot lower max_score below a saved mark)."
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/GradeItemInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeItem"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Grade Items]
+      summary: Delete an assessment that has no marks yet
+      operationId: deleteGradeItemsByGradeItemId
+      description: "Error: HAS_MARKS."
+      x-roles: [DOCTOR]
+      responses:
+        "204": {description: "Deleted"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================================== GRADES
+  /grade-items/{gradeItemId}/grades:
+    get:
+      tags: [Grades]
+      summary: Marks of every student for one assessment (doctor's mark sheet)
+      operationId: getGradeItemsByGradeItemIdGrades
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/GradeItemId"}
+        - {name: groupId, in: query, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: One row per student; score null = not graded
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/StudentGrade"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-items/{gradeItemId}/grades/{enrollmentId}:
+    put:
+      tags: [Grades]
+      summary: Enter or change one mark by hand
+      operationId: putGradeItemsByGradeItemIdGradesByEnrollmentId
+      description: |
+        Same table as the Excel import (STUDENT_GRADE). If a mark already existed,
+        a GRADE_CHANGE row keeps the old and new value.
+        Errors: SCORE_ABOVE_MAXIMUM, NOT_YOUR_STUDENT.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/GradeItemId"}
+        - {$ref: "#/components/parameters/EnrollmentId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/SetGradeRequest"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StudentGrade"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /student-grades/{studentGradeId}/changes:
+    get:
+      tags: [Grades]
+      summary: History of one mark
+      operationId: getStudentGradesByStudentGradeIdChanges
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/StudentGradeId"}
+      responses:
+        "200":
+          description: Changes, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GradeChange"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/grades:
+    get:
+      tags: [Grades]
+      summary: My coursework marks in one course
+      operationId: getMeGrades
+      description: |
+        Only my own marks, and only the values the doctor has SENT (published_score).
+        An approved mark that was not sent yet is not shown. null = not published yet.
+        Final-exam marks are not included.
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingIdQuery"}
+      responses:
+        "200":
+          description: My marks
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MyGrades"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================= ASSIGNMENTS & SUBMISSIONS
+  /me/assignments:
+    get:
+      tags: [Assignments & Submissions]
+      summary: My assignments in one course, with my latest submission
+      operationId: getMeAssignments
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingIdQuery"}
+      responses:
+        "200":
+          description: Assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/MyAssignment"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /assignments/{gradeItemId}/submissions:
+    parameters:
+      - {$ref: "#/components/parameters/GradeItemId"}
+    post:
+      tags: [Assignments & Submissions]
+      summary: Upload my solution (PDF)
+      operationId: postAssignmentsByGradeItemIdSubmissions
+      description: |
+        Each upload is a new attempt (attempt_no 1, 2, 3...). Uploading after
+        `dueAt` is allowed but marked `late: true`.
+        PDF only, at most 10 MB.
+        Errors: NOT_AN_ASSIGNMENT, NOT_FOR_YOUR_GROUP, UNSUPPORTED_FILE_TYPE, FILE_TOO_LARGE.
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Submission"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Assignments & Submissions]
+      summary: All submissions for an assignment (doctor)
+      operationId: getAssignmentsByGradeItemIdSubmissions
+      description: By default only the latest attempt per student.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - name: allAttempts
+          in: query
+          schema: {type: boolean, default: false}
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Submission"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /assignments/{gradeItemId}/attachments:
+    post:
+      tags: [Assignments & Submissions]
+      summary: Attach an instructor file to an assignment (brief, starter code)
+      operationId: postAssignmentsByGradeItemIdAttachments
+      description: "Saved in FILE_ASSET + ASSIGNMENT_ATTACHMENT. Max 10 MB. Error: NOT_AN_ASSIGNMENT."
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/GradeItemId"}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        "201":
+          description: Attached
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/FileInfo"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  /assignments/{gradeItemId}/attachments/{fileAssetId}:
+    delete:
+      tags: [Assignments & Submissions]
+      summary: Remove an instructor attachment
+      operationId: deleteAssignmentsByGradeItemIdAttachmentsByFileAssetId
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/GradeItemId"}
+        - {$ref: "#/components/parameters/FileAssetId"}
+      responses:
+        "204": {description: Removed}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /offerings/{offeringId}/grade-changes:
+    get:
+      tags: [Grades]
+      summary: Every mark change in a course (modification history)
+      operationId: getOfferingsByOfferingIdGradeChanges
+      description: Newest first. Doctors see changes of the grade items they are responsible for.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+        - name: q
+          in: query
+          description: Filter by student name, university ID or grade item.
+          schema: {type: string}
+        - {$ref: "#/components/parameters/Page"}
+        - {$ref: "#/components/parameters/Size"}
+      responses:
+        "200":
+          description: One page of changes
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeChangePage"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+
+  # ======================================================== GRADE IMPORT
+  /offerings/{offeringId}/grade-template:
+    get:
+      tags: [Grade Import]
+      summary: Download the Excel template for a course
+      operationId: getOfferingsByOfferingIdGradeTemplate
+      description: |
+        ONE worksheet listing every student enrolled in the course:
+          UniversityId | StudentName | Department (program code) | one column per grade item
+        The doctor fills the marks and uploads the same single file.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+      responses:
+        "200":
+          description: Excel template
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: {type: string, format: binary}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-imports:
+    post:
+      tags: [Grade Import]
+      summary: Upload a filled Excel file (starts a batch)
+      operationId: postGradeImports
+      description: |
+        One Excel file with all the course's students (any department).
+        Returns 202 immediately; the file is checked in the background and the
+        backend SPLITS the rows by department (program): each program becomes one
+        GRADE_IMPORT_SHEET part in the preview. The UI polls
+        GET /grade-imports/{batchId} until state is READY_FOR_REVIEW or NEEDS_FIXES.
+        Any error blocks the whole file. Nothing is saved to student marks yet;
+        after approval the doctor reviews and sends the emails (POST /grade-sends).
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [offeringId, file]
+              properties:
+                offeringId: {type: integer, format: int64}
+                file: {type: string, format: binary}
+      responses:
+        "202":
+          description: Upload accepted, checking started
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeImportBatch"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /offerings/{offeringId}/grade-imports:
+    get:
+      tags: [Grade Import]
+      summary: My past uploads for a course
+      operationId: getOfferingsByOfferingIdGradeImports
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+      responses:
+        "200":
+          description: Batches, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/GradeImportBatch"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-imports/{batchId}:
+    get:
+      tags: [Grade Import]
+      summary: Batch status
+      operationId: getGradeImportsByBatchId
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      responses:
+        "200":
+          description: Batch
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeImportBatch"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-imports/{batchId}/preview:
+    get:
+      tags: [Grade Import]
+      summary: Preview the checked file
+      operationId: getGradeImportsByBatchIdPreview
+      description: |
+        Every worksheet (GRADE_IMPORT_SHEET) with every cell (GRADE_IMPORT_ENTRY):
+        proposed value, current saved value, and any error. An error anywhere
+        blocks approval of the whole file.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeImportPreview"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-imports/{batchId}/approve:
+    post:
+      tags: [Grade Import]
+      summary: Approve the file (saves the marks)
+      operationId: postGradeImportsByBatchIdApprove
+      description: |
+        Only when state is READY_FOR_REVIEW. Saves marks in STUDENT_GRADE and a
+        GRADE_CHANGE row for every mark that replaced an older value.
+        Approving does NOT email anyone, and students do not see the new marks
+        until the doctor sends them (POST /grade-sends/{sendBatchId}/send).
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ApproveResponse"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-imports/{batchId}/reject:
+    post:
+      tags: [Grade Import]
+      summary: Reject the file (nothing is saved)
+      operationId: postGradeImportsByBatchIdReject
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/BatchId"}
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeImportBatch"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================== GRADE SEND
+  /grade-sends:
+    post:
+      tags: [Grade Send]
+      summary: Prepare a send (step 1 of "Review and Send")
+      operationId: postGradeSends
+      description: |
+        Creates a GRADE_SEND_BATCH and one GRADE_EMAIL per student (state DRAFT)
+        with a snapshot of exactly what will be emailed. Each doctor sends only
+        their own approved marks. Nothing is sent yet.
+
+        Who gets an email: a student with at least one mark where
+        score != published_score (never sent, or changed since the last email).
+        Students with no change get nothing.
+        The email always lists ALL of the student's marks from this doctor;
+        a changed mark adds "Updated from <published_score>/<max>".
+        When a student's email is SENT, their marks are published:
+        published_score = score, published_at = now. Only then the student
+        sees them in the app.
+
+        Email template (English):
+          Subject: Your marks in {courseCode} – {courseTitle}
+          Dear {studentFullName},
+          Dr. {doctorFullName} has published the following coursework marks:
+          {gradeItemTitle}: {score} / {maxScore}   [Updated from {oldScore}/{maxScore}]
+          ...one line per mark...
+          If you think a mark is wrong, open a ticket in EduSync.
+
+        Example of an update email:
+          Quiz 1: 5 / 5 Updated from 4/5
+          Midterm: 17 / 20
+        Error: NOTHING_TO_SEND.
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offeringId]
+              properties:
+                offeringId: {type: integer, format: int64}
+      responses:
+        "201":
+          description: Draft send created; review it with GET /grade-sends/{sendBatchId}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeSendBatch"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-sends/{sendBatchId}:
+    get:
+      tags: [Grade Send]
+      summary: Review a send / follow its delivery
+      operationId: getGradeSendsBySendBatchId
+      description: Before sending, shows each recipient and email content. After, shows SENT / FAILED per student.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SendBatchId"}
+      responses:
+        "200":
+          description: Send batch with its emails
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeSendBatch"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-sends/{sendBatchId}/send:
+    post:
+      tags: [Grade Send]
+      summary: Confirm and send (step 2)
+      operationId: postGradeSendsBySendBatchIdSend
+      description: |
+        Sets reviewed_at and queues the emails; they are sent in the background
+        (202). The UI polls GET /grade-sends/{sendBatchId}. Error: ALREADY_SENT.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SendBatchId"}
+      responses:
+        "202":
+          description: Sending started
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeSendBatch"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /grade-sends/{sendBatchId}/retry-failed:
+    post:
+      tags: [Grade Send]
+      summary: Retry only the failed emails
+      operationId: postGradeSendsBySendBatchIdRetryFailed
+      description: Successful emails are never sent twice (unique per batch + student).
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/SendBatchId"}
+      responses:
+        "202":
+          description: Retry started
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/GradeSendBatch"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ====================================================== CONTROL EXPORT
+  /control-exports:
+    post:
+      tags: [Control Export]
+      summary: Generate the control-office Excel file
+      operationId: postControlExports
+      description: |
+        One Excel file per course, one worksheet per academic program
+        (e.g. "CS"), same layout for every department:
+
+          | SeatNo | StudentNameAr | ClassWork          |
+          |        |               | {courseworkMax}    |   <- 2nd header row = maximum
+          | 1      | ...           | 32                 |
+
+        SeatNo = ENROLLMENT.seat_no, StudentNameAr = USER.full_name_ar,
+        ClassWork = sum of ALL the student's approved coursework marks in this
+        course (quizzes, labs, oral... no detail columns). Rows sorted by SeatNo.
+        Any doctor who teaches the course can generate it. Students with a
+        missing mark, seat number or Arabic name are counted in the response
+        so the doctor can fix them first. The doctor downloads the file and
+        uploads it to the university system manually.
+      x-roles: [DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offeringId]
+              properties:
+                offeringId: {type: integer, format: int64}
+      responses:
+        "201":
+          description: File generated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ControlExport"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /offerings/{offeringId}/control-exports:
+    get:
+      tags: [Control Export]
+      summary: Previously generated exports for a course
+      operationId: getOfferingsByOfferingIdControlExports
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/OfferingId"}
+      responses:
+        "200":
+          description: Exports, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/ControlExport"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================================= TICKETS
+  /ticket-categories:
+    get:
+      tags: [Tickets]
+      summary: Ticket categories (for the "new ticket" dropdown)
+      operationId: getTicketCategories
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/ActiveOnly"}
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/TicketCategory"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Tickets]
+      summary: Add a category
+      operationId: postTicketCategories
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TicketCategoryInput"}
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TicketCategory"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ticket-categories/{categoryId}:
+    patch:
+      tags: [Tickets]
+      summary: Rename or deactivate a category
+      operationId: updateTicketCategoriesByCategoryId
+      x-roles: [ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/CategoryId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/TicketCategoryInput"}
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TicketCategory"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets:
+    post:
+      tags: [Tickets]
+      summary: Open a ticket about a course (student)
+      operationId: postTickets
+      description: |
+        Example: "my quiz mark is missing". The ticket is linked to the student's
+        enrollment, so the right doctor can see it. There is no chat thread; the
+        doctor answers with a decision when resolving.
+      x-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateTicketRequest"}
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ticket"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Tickets]
+      summary: Tickets to handle (doctor / admin)
+      operationId: getTickets
+      description: Doctors see tickets of courses they teach; admins see all.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/TicketStatus"}}
+        - {name: offeringId, in: query, schema: {type: integer, format: int64}}
+        - {name: categoryId, in: query, schema: {type: integer, format: int64}}
+        - {$ref: "#/components/parameters/Page"}
+        - {$ref: "#/components/parameters/Size"}
+      responses:
+        "200":
+          description: One page of tickets
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TicketPage"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/tickets:
+    get:
+      tags: [Tickets]
+      summary: My tickets (student)
+      operationId: getMeTickets
+      x-roles: [STUDENT]
+      responses:
+        "200":
+          description: My tickets, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Ticket"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{ticketId}:
+    get:
+      tags: [Tickets]
+      summary: One ticket
+      operationId: getTicketsByTicketId
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/TicketId"}
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ticket"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{ticketId}/take:
+    post:
+      tags: [Tickets]
+      summary: Doctor takes the ticket (status -> IN_PROGRESS)
+      operationId: postTicketsByTicketIdTake
+      description: Sets doctor_id to the caller. Error ALREADY_TAKEN.
+      x-roles: [DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/TicketId"}
+      responses:
+        "200":
+          description: Taken
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ticket"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{ticketId}/resolve:
+    post:
+      tags: [Tickets]
+      summary: Close the ticket with a decision
+      operationId: postTicketsByTicketIdResolve
+      description: Sets decision (ACCEPTED or REJECTED), status RESOLVED and resolved_at.
+      x-roles: [DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/TicketId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ResolveTicketRequest"}
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ticket"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =============================================================== AUDIT
+  /audit-events:
+    get:
+      tags: [Audit]
+      summary: Who did what, and when (read only)
+      operationId: getAuditEvents
+      description: |
+        The backend writes AUDIT_EVENT automatically for important actions
+        (login, mark changes, approvals, sends, role changes). Nobody can edit it.
+      x-roles: [ADMIN]
+      parameters:
+        - {name: actorId, in: query, schema: {type: integer, format: int64}}
+        - {name: actorRole, in: query, schema: {$ref: "#/components/schemas/Role"}}
+        - name: q
+          in: query
+          description: Search in actor name, action, target or event ID.
+          schema: {type: string}
+        - name: targetType
+          in: query
+          schema: {type: string, example: STUDENT_GRADE}
+        - {name: targetId, in: query, schema: {type: integer, format: int64}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - {$ref: "#/components/parameters/Page"}
+        - {$ref: "#/components/parameters/Size"}
+      responses:
+        "200":
+          description: One page of events, newest first
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AuditEventPage"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ======================================================== AI ASSISTANT
+  /ai/conversations:
+    get:
+      tags: [AI Assistant]
+      summary: My chat history list
+      operationId: getAiConversations
+      x-roles: [STUDENT, DOCTOR]
+      responses:
+        "200":
+          description: My conversations, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AiConversation"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [AI Assistant]
+      summary: Start a new chat (optionally about one course)
+      operationId: postAiConversations
+      description: If `offeringId` is given, answers use only that course's approved materials. Students must be enrolled.
+      x-roles: [STUDENT, DOCTOR]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offeringId: {type: integer, format: int64, nullable: true}
+                title: {type: string}
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AiConversation"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ai/conversations/{conversationId}:
+    delete:
+      tags: [AI Assistant]
+      summary: Delete one of my chats
+      operationId: deleteAiConversationsByConversationId
+      x-roles: [STUDENT, DOCTOR]
+      parameters:
+        - {$ref: "#/components/parameters/ConversationId"}
+      responses:
+        "204": {description: "Deleted"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ai/conversations/{conversationId}/escalate:
+    post:
+      tags: [AI Assistant]
+      summary: "Not resolved: ask the doctor (turns the chat into a ticket)"
+      operationId: postAiConversationsByConversationIdEscalate
+      description: |
+        Only for a chat tied to one of my courses. Creates a TICKET (source
+        AI_ESCALATION, conversation_id = this chat) for that course's doctors;
+        the doctor can read the chat and its sources. Error: NO_COURSE.
+      x-roles: [STUDENT]
+      parameters:
+        - {$ref: "#/components/parameters/ConversationId"}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EscalateRequest"}
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ticket"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409": {$ref: "#/components/responses/Conflict"}
+
+  /ai/conversations/{conversationId}/messages:
+    parameters:
+      - {$ref: "#/components/parameters/ConversationId"}
+    get:
+      tags: [AI Assistant]
+      summary: Messages of a chat
+      operationId: getAiConversationsByConversationIdMessages
+      x-roles: [STUDENT, DOCTOR]
+      responses:
+        "200":
+          description: Messages, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/AiMessage"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [AI Assistant]
+      summary: Ask a question
+      operationId: postAiConversationsByConversationIdMessages
+      description: |
+        Saves the user's message, finds the most relevant KNOWLEDGE_CHUNKs from
+        approved course materials, asks the language model, saves the answer
+        with its citations (AI_CITATION), and returns the answer.
+        Errors: AI_UNAVAILABLE, RATE_LIMITED.
+      x-roles: [STUDENT, DOCTOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: {type: string, maxLength: 4000, example: "Explain 3NF with an example"}
+      responses:
+        "201":
+          description: The assistant's answer
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AiMessage"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =============================================================== FILES
+  /files/{fileAssetId}/download:
+    get:
+      tags: [Files]
+      summary: Download any stored file
+      operationId: getFilesByFileAssetIdDownload
+      description: |
+        One download endpoint for materials, submissions, import files and control
+        exports. The backend checks that the caller is allowed to see this file
+        (e.g. a student can download their own submission, not another student's).
+      x-roles: [STUDENT, DOCTOR, ADMIN]
+      parameters:
+        - {$ref: "#/components/parameters/FileAssetId"}
+      responses:
+        "200":
+          description: The file
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# =====================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Token is valid for 8 hours (exp claim). No refresh token: when it expires every call answers 401 TOKEN_EXPIRED and React sends the user to login."
+
+  # ------------------------------------------------------------ parameters
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number, starting at 0.
+      schema: {type: integer, minimum: 0, default: 0}
+    Size:
+      name: size
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    ActiveOnly:
+      name: activeOnly
+      in: query
+      schema: {type: boolean, default: true}
+    UserId: {name: userId, in: path, required: true, schema: {type: integer, format: int64}}
+    ProgramId: {name: programId, in: path, required: true, schema: {type: integer, format: int64}}
+    TermId: {name: termId, in: path, required: true, schema: {type: integer, format: int64}}
+    CourseId: {name: courseId, in: path, required: true, schema: {type: integer, format: int64}}
+    OfferingId: {name: offeringId, in: path, required: true, schema: {type: integer, format: int64}}
+    OfferingIdQuery: {name: offeringId, in: query, required: true, schema: {type: integer, format: int64}}
+    EnrollmentId: {name: enrollmentId, in: path, required: true, schema: {type: integer, format: int64}}
+    GroupId: {name: groupId, in: path, required: true, schema: {type: integer, format: int64}}
+    MembershipId: {name: membershipId, in: path, required: true, schema: {type: integer, format: int64}}
+    TeachingAssignmentId: {name: assignmentId, in: path, required: true, schema: {type: integer, format: int64}}
+    SessionId: {name: sessionId, in: path, required: true, schema: {type: integer, format: int64}}
+    RecordId: {name: recordId, in: path, required: true, schema: {type: integer, format: int64}}
+    MaterialId: {name: materialId, in: path, required: true, schema: {type: integer, format: int64}}
+    GradeItemId: {name: gradeItemId, in: path, required: true, schema: {type: integer, format: int64}}
+    StudentGradeId: {name: studentGradeId, in: path, required: true, schema: {type: integer, format: int64}}
+    BatchId: {name: batchId, in: path, required: true, schema: {type: integer, format: int64}}
+    SendBatchId: {name: sendBatchId, in: path, required: true, schema: {type: integer, format: int64}}
+    CategoryId: {name: categoryId, in: path, required: true, schema: {type: integer, format: int64}}
+    TicketId: {name: ticketId, in: path, required: true, schema: {type: integer, format: int64}}
+    ConversationId: {name: conversationId, in: path, required: true, schema: {type: integer, format: int64}}
+    RoomId: {name: roomId, in: path, required: true, schema: {type: integer, format: int64}}
+    PlanCourseId: {name: planCourseId, in: path, required: true, schema: {type: integer, format: int64}}
+    RequestId: {name: requestId, in: path, required: true, schema: {type: integer, format: int64}}
+    TermIdQuery: {name: termId, in: query, required: true, schema: {type: integer, format: int64}}
+    FileAssetId: {name: fileAssetId, in: path, required: true, schema: {type: integer, format: int64}}
+
+  # ------------------------------------------------------------- responses
+  responses:
+    Unauthorized:
+      description: Not logged in, wrong email/password, or token expired
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Forbidden:
+      description: Logged in, but not allowed (wrong role, not your data, password change required)
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: Not found, or not visible to this user
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    Conflict:
+      description: Not allowed in the current state (already done, duplicate, window closed...)
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    ValidationError:
+      description: The request data is invalid; `details` says which field
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    TooManyRequests:
+      description: Too many requests in a short time
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    ServiceUnavailable:
+      description: An outside service (e.g. the AI model) is not available
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+
+  # --------------------------------------------------------------- schemas
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string, example: QR_EXPIRED}
+        message: {type: string, example: This QR code has expired. Scan the new one.}
+        details:
+          type: object
+          additionalProperties: true
+          example: {field: email, problem: must be a university email}
+
+    PageMeta:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}
+
+    # ----------------------------------------------------------- auth/users
+    Role:
+      type: string
+      description: Teaching assistants are DOCTOR users with the same permissions.
+      enum: [STUDENT, DOCTOR, ADMIN]
+
+    UserStatus:
+      type: string
+      enum: [ACTIVE, DISABLED]
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email, example: eyad@university.edu.eg}
+        password: {type: string, format: password}
+
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType, mustChangePassword, user]
+      properties:
+        accessToken: {type: string}
+        tokenType: {type: string, example: Bearer}
+        expiresInSeconds: {type: integer, example: 28800}
+        mustChangePassword:
+          type: boolean
+          description: true = show the "create new password" screen before anything else.
+        user: {$ref: "#/components/schemas/User"}
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: {type: string, format: password}
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
+          description: At least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol (e.g. Edu@2026x). Error WEAK_PASSWORD otherwise.
+
+    User:
+      type: object
+      description: Never contains the password hash.
+      required: [userId, universityId, email, fullName, roles, status]
+      properties:
+        userId: {type: integer, format: int64}
+        universityId: {type: string, example: "20210345"}
+        email: {type: string, format: email}
+        fullName: {type: string, example: Eyad Shaham}
+        fullNameAr: {type: string, nullable: true, example: "إياد شحام", description: "Arabic name, used in the control-office file."}
+        roles:
+          type: array
+          items: {$ref: "#/components/schemas/Role"}
+        status: {$ref: "#/components/schemas/UserStatus"}
+        mustChangePassword: {type: boolean}
+        createdAt: {type: string, format: date-time}
+
+    UserPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/User"}
+        page: {$ref: "#/components/schemas/PageMeta"}
+
+    CreateUserRequest:
+      type: object
+      required: [universityId, email, fullName, roles]
+      properties:
+        universityId: {type: string}
+        email: {type: string, format: email}
+        fullName: {type: string}
+        fullNameAr: {type: string}
+        roles:
+          type: array
+          minItems: 1
+          items: {$ref: "#/components/schemas/Role"}
+
+    CreateUserResponse:
+      type: object
+      required: [user, temporaryPassword]
+      properties:
+        user: {$ref: "#/components/schemas/User"}
+        temporaryPassword:
+          type: string
+          description: Shown once. Not stored in plain text anywhere.
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email: {type: string, format: email}
+        fullName: {type: string}
+        fullNameAr: {type: string}
+        roles:
+          type: array
+          items: {$ref: "#/components/schemas/Role"}
+        status: {$ref: "#/components/schemas/UserStatus"}
+
+    TemporaryPassword:
+      type: object
+      required: [temporaryPassword]
+      properties:
+        temporaryPassword: {type: string}
+
+    ImportMode:
+      type: string
+      description: PREVIEW = check only, nothing saved. COMMIT = save (refused if any row has an error).
+      enum: [PREVIEW, COMMIT]
+
+    BulkImportResult:
+      type: object
+      required: [mode, totalRows, errorCount, errors]
+      properties:
+        mode: {$ref: "#/components/schemas/ImportMode"}
+        totalRows: {type: integer}
+        toCreate: {type: integer, description: "PREVIEW: rows that would create a record. COMMIT: rows created."}
+        toUpdate: {type: integer, description: "PREVIEW: rows that would update a record. COMMIT: rows updated."}
+        unchanged: {type: integer}
+        errorCount: {type: integer}
+        saved: {type: boolean, description: "true only for a COMMIT that succeeded."}
+        errors:
+          type: array
+          items:
+            type: object
+            required: [rowNo, code, message]
+            properties:
+              rowNo: {type: integer}
+              column: {type: string, nullable: true}
+              code: {type: string, example: UNKNOWN_STUDENT}
+              message: {type: string}
+
+    # ------------------------------------------------------- academic
+    Program:
+      type: object
+      required: [programId, code, name, active]
+      properties:
+        programId: {type: integer, format: int64}
+        code: {type: string, example: CS}
+        name: {type: string, example: Computer Science}
+        department: {type: string, example: Mathematics, description: "Department / faculty that owns the program."}
+        active: {type: boolean}
+        studentCount: {type: integer}
+        courseCount: {type: integer}
+
+    ProgramInput:
+      type: object
+      properties:
+        code: {type: string}
+        name: {type: string}
+        department: {type: string}
+        active: {type: boolean}
+
+    Term:
+      type: object
+      required: [termId, academicYear, termType, startDate, endDate]
+      properties:
+        termId: {type: integer, format: int64}
+        academicYear: {type: string, example: 2026/2027}
+        termType: {$ref: "#/components/schemas/TermType"}
+        startDate: {type: string, format: date}
+        endDate: {type: string, format: date}
+
+    TermType:
+      type: string
+      enum: [FALL, SPRING, SUMMER]
+
+    TermInput:
+      type: object
+      properties:
+        academicYear: {type: string}
+        termType: {$ref: "#/components/schemas/TermType"}
+        startDate: {type: string, format: date}
+        endDate: {type: string, format: date}
+
+    Course:
+      type: object
+      required: [courseId, courseCode, title, creditHours]
+      properties:
+        courseId: {type: integer, format: int64}
+        courseCode: {type: string, example: COMP 201}
+        title: {type: string, example: Database Systems}
+        creditHours: {type: integer, example: 3}
+
+    CourseInput:
+      type: object
+      properties:
+        courseCode: {type: string}
+        title: {type: string}
+        creditHours: {type: integer, minimum: 1}
+
+    Offering:
+      type: object
+      required: [offeringId, course, term, section]
+      properties:
+        offeringId: {type: integer, format: int64}
+        course: {$ref: "#/components/schemas/Course"}
+        term: {$ref: "#/components/schemas/Term"}
+        section: {type: string, example: "1"}
+        capacity: {type: integer, nullable: true}
+        courseworkMax:
+          type: number
+          description: Maximum total coursework mark for this course (e.g. 40).
+        enrolledCount: {type: integer}
+
+    OfferingInput:
+      type: object
+      required: [courseId, termId, section]
+      properties:
+        courseId: {type: integer, format: int64}
+        termId: {type: integer, format: int64}
+        section: {type: string}
+        capacity: {type: integer, nullable: true}
+        courseworkMax: {type: number}
+
+    OfferingUpdate:
+      type: object
+      properties:
+        section: {type: string}
+        capacity: {type: integer, nullable: true}
+        courseworkMax: {type: number}
+
+    Room:
+      type: object
+      required: [roomId, roomCode]
+      properties:
+        roomId: {type: integer, format: int64}
+        roomCode: {type: string, example: R101}
+        name: {type: string, example: Lab 1}
+        building: {type: string, example: Engineering B}
+        capacity: {type: integer, example: 120}
+        networkMode: {$ref: "#/components/schemas/NetworkMode"}
+        ssid: {type: string, nullable: true, example: EDU-B204, description: "LOCAL_ROUTER only."}
+        routerMac: {type: string, nullable: true, example: "3C:84:6A:1F:22:B0", description: "LOCAL_ROUTER only."}
+        subnet: {type: string, nullable: true, example: 10.12.3.0/24, description: "CAMPUS_WIFI only."}
+
+    RoomInput:
+      type: object
+      required: [roomCode, building, capacity, networkMode]
+      properties:
+        roomCode: {type: string}
+        name: {type: string}
+        building: {type: string}
+        capacity: {type: integer, minimum: 1}
+        networkMode: {$ref: "#/components/schemas/NetworkMode"}
+        ssid: {type: string}
+        routerMac: {type: string, pattern: '^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$'}
+        subnet: {type: string, example: 10.12.3.0/24}
+
+    RoomUpdate:
+      type: object
+      description: Same fields as RoomInput, all optional (PATCH sends only what changes).
+      properties:
+        roomCode: {type: string}
+        name: {type: string}
+        building: {type: string}
+        capacity: {type: integer, minimum: 1}
+        networkMode: {$ref: "#/components/schemas/NetworkMode"}
+        ssid: {type: string}
+        routerMac: {type: string, pattern: '^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$'}
+        subnet: {type: string, example: 10.12.3.0/24}
+
+    NetworkMode:
+      type: string
+      description: |
+        How a Wi-Fi QR scan is verified in this room.
+        LOCAL_ROUTER = a router in the room (SSID + MAC). CAMPUS_WIFI = a campus subnet.
+      enum: [LOCAL_ROUTER, CAMPUS_WIFI]
+
+    # ------------------------------------------------ enrollments & groups
+    EnrollmentStatus:
+      type: string
+      description: "ACTIVE = studying now. WITHDRAWN = left the course (history kept). COMPLETED = term finished."
+      enum: [ACTIVE, WITHDRAWN, COMPLETED]
+
+    StudentRef:
+      type: object
+      required: [userId, universityId, fullName]
+      properties:
+        userId: {type: integer, format: int64}
+        universityId: {type: string}
+        fullName: {type: string}
+        fullNameAr: {type: string, nullable: true}
+
+    DoctorRef:
+      type: object
+      required: [userId, fullName]
+      properties:
+        userId: {type: integer, format: int64}
+        fullName: {type: string}
+
+    Enrollment:
+      type: object
+      required: [enrollmentId, offeringId, student, programId, status]
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        programId: {type: integer, format: int64}
+        programName: {type: string}
+        status: {$ref: "#/components/schemas/EnrollmentStatus"}
+        seatNo: {type: string, nullable: true, example: "17", description: "Exam seat number used in the control-office file."}
+
+    EnrollmentInput:
+      type: object
+      required: [studentUserId, programId]
+      properties:
+        studentUserId: {type: integer, format: int64}
+        programId: {type: integer, format: int64}
+        seatNo: {type: string}
+
+    EnrollmentUpdate:
+      type: object
+      properties:
+        programId: {type: integer, format: int64}
+        status: {$ref: "#/components/schemas/EnrollmentStatus"}
+        seatNo: {type: string}
+
+    GroupType:
+      type: string
+      enum: [LECTURE, PRACTICAL]
+
+    Group:
+      type: object
+      required: [groupId, offeringId, groupType, label]
+      properties:
+        groupId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        groupType: {$ref: "#/components/schemas/GroupType"}
+        label: {type: string, example: A}
+        dayOfWeek: {$ref: "#/components/schemas/DayOfWeek"}
+        startTime: {type: string, example: "12:00", description: "HH:mm, 24-hour."}
+        endTime: {type: string, example: "14:00"}
+        memberCount: {type: integer}
+
+    GroupInput:
+      type: object
+      properties:
+        groupType: {$ref: "#/components/schemas/GroupType"}
+        label: {type: string}
+        dayOfWeek: {$ref: "#/components/schemas/DayOfWeek"}
+        startTime: {type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$'}
+        endTime: {type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$'}
+
+    DayOfWeek:
+      type: string
+      description: Weekly meeting day of the group (used in the absence list).
+      enum: [SATURDAY, SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY]
+
+    GroupMembership:
+      type: object
+      required: [membershipId, groupId, enrollmentId, student, startsAt]
+      properties:
+        membershipId: {type: integer, format: int64}
+        groupId: {type: integer, format: int64}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        startsAt: {type: string, format: date}
+        endsAt: {type: string, format: date, nullable: true, description: "null = still a member"}
+
+    MembershipInput:
+      type: object
+      required: [enrollmentId]
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        startsAt: {type: string, format: date, description: "Default today."}
+
+    EndPeriodRequest:
+      type: object
+      required: [endsAt]
+      properties:
+        endsAt: {type: string, format: date}
+
+    TeachingAssignment:
+      type: object
+      required: [assignmentId, groupId, doctor, startsAt]
+      properties:
+        assignmentId: {type: integer, format: int64}
+        groupId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        startsAt: {type: string, format: date}
+        endsAt: {type: string, format: date, nullable: true, description: "null = still teaching"}
+
+    TeachingAssignmentInput:
+      type: object
+      required: [doctorUserId]
+      properties:
+        doctorUserId: {type: integer, format: int64}
+        startsAt: {type: string, format: date, description: "Default today."}
+
+    MyEnrollment:
+      type: object
+      required: [enrollmentId, offeringId, courseCode, courseTitle, termLabel]
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        courseCode: {type: string}
+        courseTitle: {type: string}
+        termLabel: {type: string, example: Fall 2026/2027}
+        programName: {type: string}
+        doctorNames:
+          type: array
+          items: {type: string}
+        attendancePercent: {type: number, nullable: true, example: 92}
+        groups:
+          type: array
+          description: My current lecture and practical groups.
+          items: {$ref: "#/components/schemas/Group"}
+
+    TeachingGroup:
+      type: object
+      required: [teachingAssignmentId, group, offeringId, courseCode, courseTitle]
+      properties:
+        teachingAssignmentId: {type: integer, format: int64}
+        group: {$ref: "#/components/schemas/Group"}
+        offeringId: {type: integer, format: int64}
+        courseCode: {type: string}
+        courseTitle: {type: string}
+        termLabel: {type: string}
+        enrolledCount: {type: integer}
+        capacity: {type: integer, nullable: true}
+        avgAttendancePercent: {type: number, nullable: true}
+
+    # ---------------------------------------------------------- attendance
+    AttendanceMethod:
+      type: string
+      enum: [LOCAL_WIFI_QR, INTERNET_QR, MANUAL]
+
+    AttendanceStatus:
+      type: string
+      description: |
+        PRESENT, LATE (scanned after the session's lateAfterMinutes) or ABSENT. Unmarked = null.
+        For absence warnings every 2 LATE count as 1 absence.
+      enum: [PRESENT, LATE, ABSENT]
+
+    MarkMethod:
+      type: string
+      description: How this record was made (ATTENDANCE_RECORD.method).
+      enum: [QR, MANUAL, AUTO_ABSENT]
+
+    SessionState:
+      type: string
+      description: |
+        QR_OPEN: students can scan; doctor can also mark by hand.
+        MANUAL_ONLY: QR window over (or MANUAL method); doctor can still mark.
+        FINISHED: only corrections with a reason are possible.
+      enum: [QR_OPEN, MANUAL_ONLY, FINISHED]
+
+    CorrectionReason:
+      type: string
+      enum: [QR_FAILED, MANUAL_MARKING_ERROR, STUDENT_ATTENDANCE_VERIFIED_LATER, TECHNICAL_ISSUE]
+
+    CreateSessionRequest:
+      type: object
+      required: [groupId, method]
+      properties:
+        groupId: {type: integer, format: int64}
+        roomId: {type: integer, format: int64, nullable: true}
+        method: {$ref: "#/components/schemas/AttendanceMethod"}
+        qrWindowMinutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+          description: Required for the QR methods, omitted for MANUAL.
+          example: 10
+        lateAfterMinutes:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: A QR scan more than this many minutes after the start is LATE. null = no late rule.
+          example: 10
+
+    AttendanceSession:
+      type: object
+      required: [sessionId, groupId, method, state, startsAt]
+      properties:
+        sessionId: {type: integer, format: int64}
+        groupId: {type: integer, format: int64}
+        roomId: {type: integer, format: int64, nullable: true}
+        teachingAssignmentId: {type: integer, format: int64}
+        method: {$ref: "#/components/schemas/AttendanceMethod"}
+        state: {$ref: "#/components/schemas/SessionState"}
+        startsAt: {type: string, format: date-time}
+        qrWindowEndsAt: {type: string, format: date-time, nullable: true}
+        endsAt: {type: string, format: date-time, nullable: true, description: "When attendance was finished."}
+        lateAfterMinutes: {type: integer, nullable: true}
+        presentCount: {type: integer}
+        lateCount: {type: integer}
+        absentCount: {type: integer}
+        unmarkedCount: {type: integer}
+
+    QrChallenge:
+      type: object
+      required: [token, expiresAt]
+      properties:
+        token: {type: string, description: "Put this text inside the QR image."}
+        expiresAt: {type: string, format: date-time, description: "15 seconds after it was created."}
+
+    RosterEntry:
+      type: object
+      required: [enrollmentId, student]
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        recordId: {type: integer, format: int64, nullable: true}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        status:
+          type: string
+          allOf: [$ref: "#/components/schemas/AttendanceStatus"]
+          nullable: true
+          description: null = unmarked
+        method:
+          type: string
+          allOf: [$ref: "#/components/schemas/MarkMethod"]
+          nullable: true
+        markedAt: {type: string, format: date-time, nullable: true}
+        corrected: {type: boolean, description: "true if changed after finishing."}
+
+    MarkRequest:
+      type: object
+      required: [status]
+      properties:
+        status: {$ref: "#/components/schemas/AttendanceStatus"}
+
+    FinishRequest:
+      type: object
+      properties:
+        markUnmarkedAsAbsent: {type: boolean, default: false}
+
+    FinishResponse:
+      type: object
+      required: [session, absentMarkedCount]
+      properties:
+        session: {$ref: "#/components/schemas/AttendanceSession"}
+        absentMarkedCount: {type: integer}
+
+    CorrectionRequest:
+      type: object
+      required: [newStatus, reason]
+      properties:
+        newStatus: {$ref: "#/components/schemas/AttendanceStatus"}
+        reason: {$ref: "#/components/schemas/CorrectionReason"}
+
+    AttendanceChange:
+      type: object
+      required: [changeId, recordId, doctor, newStatus, reason, changedAt]
+      properties:
+        changeId: {type: integer, format: int64}
+        recordId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        oldStatus:
+          type: string
+          allOf: [$ref: "#/components/schemas/AttendanceStatus"]
+          nullable: true
+        newStatus: {$ref: "#/components/schemas/AttendanceStatus"}
+        reason: {$ref: "#/components/schemas/CorrectionReason"}
+        changedAt: {type: string, format: date-time}
+
+    AttendanceSummaryRow:
+      type: object
+      required: [enrollmentId, student, sessionsTotal, present, absent]
+      properties:
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        sessionsTotal: {type: integer}
+        present: {type: integer}
+        late: {type: integer}
+        absent: {type: integer}
+        unmarked: {type: integer}
+        attendancePercent: {type: number, example: 87.5, description: "(present + late) / sessions."}
+
+    AttendanceWarningRule:
+      type: object
+      required: [ruleId, offeringId, groupType, enabled]
+      properties:
+        ruleId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        groupType: {$ref: "#/components/schemas/GroupType"}
+        enabled: {type: boolean}
+        absenceLimit: {type: integer, nullable: true, example: 2, description: "Number of absences that puts a student on the list. Set by the doctor."}
+        updatedAt: {type: string, format: date-time}
+
+    AttendanceWarningRuleInput:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: {type: boolean}
+        absenceLimit: {type: integer, minimum: 1, description: "Required when enabled is true."}
+
+    AttendanceWarning:
+      type: object
+      required: [warningId, enrollmentId, groupType, absenceCount, issuedAt]
+      properties:
+        warningId: {type: integer, format: int64}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        programName: {type: string, example: Computer Science}
+        courseCode: {type: string, example: COMP205}
+        groupType: {$ref: "#/components/schemas/GroupType"}
+        groupLabel: {type: string, example: "معمل دكتور انتصارات"}
+        groupSchedule: {type: string, example: "Wednesday 12:00–14:00"}
+        absenceCount: {type: integer, example: 4, description: "ABSENT marks + one for every 2 LATE."}
+        lateCount: {type: integer, example: 1}
+        absentWeeks:
+          type: array
+          items: {type: integer}
+          example: [1, 2, 3, 5]
+        absenceLimit: {type: integer, example: 2}
+        issuedAt: {type: string, format: date-time}
+        emailedAt: {type: string, format: date-time, nullable: true}
+
+    CheckInRequest:
+      type: object
+      required: [qrToken]
+      properties:
+        qrToken: {type: string}
+
+    CheckInResponse:
+      type: object
+      required: [sessionId, status, markedAt]
+      properties:
+        sessionId: {type: integer, format: int64}
+        courseCode: {type: string}
+        status: {$ref: "#/components/schemas/AttendanceStatus"}
+        markedAt: {type: string, format: date-time}
+
+    MyAttendance:
+      type: object
+      required: [offeringId, sessions]
+      properties:
+        offeringId: {type: integer, format: int64}
+        present: {type: integer}
+        late: {type: integer}
+        absent: {type: integer}
+        attendancePercent: {type: number}
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [sessionId, startsAt, groupType]
+            properties:
+              sessionId: {type: integer, format: int64}
+              startsAt: {type: string, format: date-time}
+              groupType: {$ref: "#/components/schemas/GroupType"}
+              groupLabel: {type: string}
+              status:
+                type: string
+                allOf: [$ref: "#/components/schemas/AttendanceStatus"]
+                nullable: true
+
+    # ------------------------------------------------------- files/materials
+    FileInfo:
+      type: object
+      required: [fileAssetId, originalName, mimeType, sizeBytes]
+      properties:
+        fileAssetId: {type: integer, format: int64}
+        originalName: {type: string, example: lecture3.pdf}
+        mimeType: {type: string, example: application/pdf}
+        sizeBytes: {type: integer, format: int64}
+        downloadUrl: {type: string, example: /api/files/55/download}
+
+    Material:
+      type: object
+      required: [materialId, offeringId, title, file]
+      properties:
+        materialId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        lectureNo: {type: integer, nullable: true, description: "Week / lecture number; 0 = course documents."}
+        kind: {$ref: "#/components/schemas/MaterialKind"}
+        title: {type: string}
+        file: {$ref: "#/components/schemas/FileInfo"}
+        uploadedBy: {$ref: "#/components/schemas/DoctorRef"}
+        approvedAt: {type: string, format: date-time, nullable: true, description: "null = hidden from students"}
+        aiEnabled: {type: boolean, description: "Include in the AI assistant's knowledge."}
+        aiStatus: {type: string, enum: [PENDING, PROCESSING, PARSED, FAILED]}
+        aiError: {type: string, nullable: true, example: "Scanned image - no text layer"}
+        chunkCount: {type: integer, example: 45}
+        indexedAt: {type: string, format: date-time, nullable: true}
+
+    MaterialKind:
+      type: string
+      enum: [LECTURE, SYLLABUS, READING]
+
+    MaterialUpdate:
+      type: object
+      properties:
+        title: {type: string}
+        lectureNo: {type: integer}
+        kind: {$ref: "#/components/schemas/MaterialKind"}
+        aiEnabled: {type: boolean, description: "Only PARSED materials can be enabled (AI_NOT_READY)."}
+
+    # -------------------------------------------------------------- grades
+    AssessmentType:
+      type: string
+      enum: [QUIZ, MIDTERM, ASSIGNMENT, PRACTICAL, PROJECT, ORAL, OTHER]
+
+    GradeScope:
+      type: string
+      description: OFFERING = whole course. GROUP = only the listed groups.
+      enum: [OFFERING, GROUP]
+
+    GradeItem:
+      type: object
+      required: [gradeItemId, offeringId, title, maxScore, scope, assessmentType]
+      properties:
+        gradeItemId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        title: {type: string, example: Quiz 1}
+        maxScore: {type: number, example: 5}
+        scope: {$ref: "#/components/schemas/GradeScope"}
+        assessmentType: {$ref: "#/components/schemas/AssessmentType"}
+        groupIds:
+          type: array
+          description: Only when scope is GROUP.
+          items: {type: integer, format: int64}
+        dueAt: {type: string, format: date-time, nullable: true, description: "Only for ASSIGNMENT."}
+        opensAt: {type: string, format: date-time, nullable: true, description: "Only for ASSIGNMENT. Students can upload from this time."}
+        instructions: {type: string, nullable: true, description: "Only for ASSIGNMENT."}
+        attachments:
+          type: array
+          description: Instructor files (ASSIGNMENT only).
+          items: {$ref: "#/components/schemas/FileInfo"}
+
+    GradeItemInput:
+      type: object
+      required: [title, maxScore, scope, assessmentType]
+      properties:
+        title: {type: string}
+        maxScore: {type: number, exclusiveMinimum: true, minimum: 0}
+        scope: {$ref: "#/components/schemas/GradeScope"}
+        assessmentType: {$ref: "#/components/schemas/AssessmentType"}
+        groupIds:
+          type: array
+          items: {type: integer, format: int64}
+        dueAt: {type: string, format: date-time}
+        opensAt: {type: string, format: date-time}
+        instructions: {type: string, maxLength: 10000}
+
+    StudentGrade:
+      type: object
+      required: [enrollmentId, student, gradeItemId]
+      properties:
+        studentGradeId: {type: integer, format: int64, nullable: true, description: "null = no mark row yet"}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        gradeItemId: {type: integer, format: int64}
+        score: {type: number, nullable: true, description: "null = not graded. 0 = real zero."}
+        publishedScore: {type: number, nullable: true, description: "The value the student sees (last sent). Differs from score until the doctor sends again."}
+        publishedAt: {type: string, format: date-time, nullable: true}
+        source: {type: string, enum: [MANUAL, IMPORT], nullable: true}
+        updatedAt: {type: string, format: date-time, nullable: true}
+
+    SetGradeRequest:
+      type: object
+      required: [score]
+      properties:
+        score: {type: number, nullable: true, minimum: 0, description: "null clears the mark."}
+        reason: {type: string, maxLength: 300, example: "Regrade request - Q4", description: "Saved in GRADE_CHANGE when an existing mark changes."}
+
+    GradeChange:
+      type: object
+      required: [changeId, studentGradeId, doctor, changedAt]
+      properties:
+        changeId: {type: integer, format: int64}
+        studentGradeId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        batchId: {type: integer, format: int64, nullable: true, description: "Set when the change came from an Excel import."}
+        oldScore: {type: number, nullable: true}
+        newScore: {type: number, nullable: true}
+        reason: {type: string, nullable: true}
+        changedAt: {type: string, format: date-time}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        gradeItemTitle: {type: string, example: Midterm}
+
+    MyGrades:
+      type: object
+      required: [offeringId, items]
+      properties:
+        offeringId: {type: integer, format: int64}
+        courseworkMax: {type: number}
+        totalSoFar: {type: number, description: "Sum of graded items only."}
+        items:
+          type: array
+          items:
+            type: object
+            required: [gradeItemId, title, maxScore]
+            properties:
+              gradeItemId: {type: integer, format: int64}
+              title: {type: string}
+              assessmentType: {$ref: "#/components/schemas/AssessmentType"}
+              maxScore: {type: number}
+              score: {type: number, nullable: true, description: "Published value; null = not published yet."}
+
+    Submission:
+      type: object
+      required: [submissionId, gradeItemId, enrollmentId, attemptNo, submittedAt, late, file]
+      properties:
+        submissionId: {type: integer, format: int64}
+        gradeItemId: {type: integer, format: int64}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        attemptNo: {type: integer}
+        submittedAt: {type: string, format: date-time}
+        late: {type: boolean}
+        file: {$ref: "#/components/schemas/FileInfo"}
+
+    MyAssignment:
+      type: object
+      required: [gradeItemId, title, maxScore, dueAt]
+      properties:
+        gradeItemId: {type: integer, format: int64}
+        title: {type: string}
+        maxScore: {type: number}
+        dueAt: {type: string, format: date-time}
+        opensAt: {type: string, format: date-time, nullable: true}
+        instructions: {type: string, nullable: true}
+        attachments:
+          type: array
+          items: {$ref: "#/components/schemas/FileInfo"}
+        status: {type: string, enum: [NOT_OPEN, TODO, PAST_DUE, SUBMITTED, GRADED]}
+        latestSubmission:
+          type: object
+          allOf: [$ref: "#/components/schemas/Submission"]
+          nullable: true
+        score: {type: number, nullable: true}
+
+    # -------------------------------------------------------- grade import
+    ImportState:
+      type: string
+      description: |
+        CHECKING: being read. NEEDS_FIXES: has errors, whole file blocked.
+        READY_FOR_REVIEW: no errors, waiting for approval.
+        APPROVED: marks saved. REJECTED: nothing saved.
+      enum: [CHECKING, NEEDS_FIXES, READY_FOR_REVIEW, APPROVED, REJECTED]
+
+    GradeImportBatch:
+      type: object
+      required: [batchId, offeringId, state, file]
+      properties:
+        batchId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        state: {$ref: "#/components/schemas/ImportState"}
+        file: {$ref: "#/components/schemas/FileInfo"}
+        uploadedAt: {type: string, format: date-time}
+        approvedAt: {type: string, format: date-time, nullable: true}
+        errorCount: {type: integer}
+
+    GradeImportPreview:
+      type: object
+      required: [batch, sheets]
+      properties:
+        batch: {$ref: "#/components/schemas/GradeImportBatch"}
+        sheets:
+          type: array
+          items: {$ref: "#/components/schemas/GradeImportSheet"}
+
+    GradeImportSheet:
+      type: object
+      required: [sheetId, sheetName, validationState, entries]
+      properties:
+        sheetId: {type: integer, format: int64}
+        sheetName: {type: string, description: "The department part of the file, e.g. CS."}
+        programId: {type: integer, format: int64, nullable: true}
+        programName: {type: string}
+        validationState: {type: string, enum: [VALID, INVALID]}
+        sheetError: {type: string, nullable: true, example: Unknown worksheet name}
+        entries:
+          type: array
+          items: {$ref: "#/components/schemas/ImportEntry"}
+
+    ImportEntry:
+      type: object
+      required: [entryId, rowNo, columnKey, rawUniversityId, status]
+      properties:
+        entryId: {type: integer, format: int64}
+        rowNo: {type: integer}
+        columnKey: {type: string, example: Quiz 1}
+        gradeItemId: {type: integer, format: int64, nullable: true}
+        rawUniversityId: {type: string, description: "Exactly what was typed in the file."}
+        enrollmentId: {type: integer, format: int64, nullable: true, description: "null = student not found"}
+        studentName: {type: string, nullable: true}
+        rawValue: {type: string, nullable: true}
+        proposedScore: {type: number, nullable: true, description: "null = blank cell (never treated as 0)"}
+        currentScore: {type: number, nullable: true, description: "Already saved mark, if any."}
+        status: {type: string, enum: [NEW, CHANGED, UNCHANGED, BLANK, ERROR]}
+        errorMessage:
+          type: string
+          nullable: true
+          description: e.g. UNKNOWN_STUDENT, DUPLICATE_STUDENT, INVALID_NUMBER, SCORE_ABOVE_MAXIMUM, NOT_YOUR_COMPONENT
+
+    ApproveResponse:
+      type: object
+      required: [batch, savedMarks, changedMarks]
+      properties:
+        batch: {$ref: "#/components/schemas/GradeImportBatch"}
+        savedMarks: {type: integer}
+        changedMarks: {type: integer, description: "Marks that replaced an older value."}
+
+    # ---------------------------------------------------------- grade send
+    GradeSendBatch:
+      type: object
+      required: [sendBatchId, offeringId, emails]
+      properties:
+        sendBatchId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        reviewedAt: {type: string, format: date-time, nullable: true, description: "null = still a draft"}
+        sentAt: {type: string, format: date-time, nullable: true}
+        sentCount: {type: integer}
+        failedCount: {type: integer}
+        pendingCount: {type: integer}
+        emails:
+          type: array
+          items: {$ref: "#/components/schemas/GradeEmail"}
+
+    GradeEmail:
+      type: object
+      required: [gradeEmailId, enrollmentId, emailSnapshot, state]
+      properties:
+        gradeEmailId: {type: integer, format: int64}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        emailSnapshot: {type: string, format: email}
+        contentSnapshot: {type: string, description: "The exact text that is/was sent."}
+        state: {type: string, enum: [DRAFT, QUEUED, SENT, FAILED]}
+        attempts: {type: integer}
+        error: {type: string, nullable: true}
+        sentAt: {type: string, format: date-time, nullable: true}
+
+    # ------------------------------------------------------ control export
+    ControlExport:
+      type: object
+      required: [exportId, offeringId, generatedAt, file]
+      properties:
+        exportId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        doctor: {$ref: "#/components/schemas/DoctorRef"}
+        generatedAt: {type: string, format: date-time}
+        file: {$ref: "#/components/schemas/FileInfo"}
+        studentCount: {type: integer}
+        missingMarksCount: {type: integer, description: "Students with at least one grade item not graded (counted as 0 in the total)."}
+        missingSeatNoCount: {type: integer}
+        missingArabicNameCount: {type: integer}
+
+    # ------------------------------------------------------------- tickets
+    TicketStatus:
+      type: string
+      description: "OPEN = waiting for a doctor. IN_PROGRESS = a doctor took it. RESOLVED = closed with a decision."
+      enum: [OPEN, IN_PROGRESS, RESOLVED]
+
+    TicketDecision:
+      type: string
+      description: "The answer given when the ticket is resolved."
+      enum: [ACCEPTED, REJECTED]
+
+    TicketCategory:
+      type: object
+      required: [categoryId, name, active]
+      properties:
+        categoryId: {type: integer, format: int64}
+        name: {type: string, example: Missing mark}
+        active: {type: boolean}
+
+    TicketCategoryInput:
+      type: object
+      properties:
+        name: {type: string}
+        active: {type: boolean}
+
+    CreateTicketRequest:
+      type: object
+      required: [enrollmentId, categoryId, title, description]
+      properties:
+        enrollmentId: {type: integer, format: int64, description: "The course: must be one of MY enrollments."}
+        categoryId: {type: integer, format: int64}
+        title: {type: string, minLength: 4, maxLength: 150, example: "Quiz 1 mark is missing"}
+        description: {type: string, minLength: 10, maxLength: 2000}
+
+    ResolveTicketRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: {$ref: "#/components/schemas/TicketDecision"}
+
+    Ticket:
+      type: object
+      required: [ticketId, enrollmentId, category, description, status, createdAt]
+      properties:
+        ticketId: {type: integer, format: int64}
+        enrollmentId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        courseCode: {type: string}
+        category: {$ref: "#/components/schemas/TicketCategory"}
+        title: {type: string}
+        description: {type: string}
+        source: {type: string, enum: [GENERAL, AI_ESCALATION]}
+        conversationId: {type: integer, format: int64, nullable: true, description: "The AI chat it was escalated from."}
+        status: {$ref: "#/components/schemas/TicketStatus"}
+        doctor:
+          type: object
+          allOf: [$ref: "#/components/schemas/DoctorRef"]
+          nullable: true
+        decision:
+          type: string
+          allOf: [$ref: "#/components/schemas/TicketDecision"]
+          nullable: true
+        createdAt: {type: string, format: date-time}
+        resolvedAt: {type: string, format: date-time, nullable: true}
+
+    TicketPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/Ticket"}
+        page: {$ref: "#/components/schemas/PageMeta"}
+
+    # --------------------------------------------------------------- audit
+    AuditEvent:
+      type: object
+      required: [eventId, action, targetType, occurredAt]
+      properties:
+        eventId: {type: integer, format: int64}
+        actor:
+          type: object
+          allOf: [$ref: "#/components/schemas/DoctorRef"]
+          nullable: true
+          description: null = done by the system.
+        action: {type: string, example: GRADE_IMPORT_APPROVED}
+        targetType: {type: string, example: GRADE_IMPORT_BATCH}
+        targetId: {type: integer, format: int64, nullable: true}
+        before: {type: object, nullable: true, additionalProperties: true}
+        after: {type: object, nullable: true, additionalProperties: true}
+        ip: {type: string, nullable: true}
+        occurredAt: {type: string, format: date-time}
+
+    AuditEventPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/AuditEvent"}
+        page: {$ref: "#/components/schemas/PageMeta"}
+
+    # -------------------------------------------------------- registration
+    StudentProfile:
+      type: object
+      required: [userId, programId, level, maxCreditHours]
+      properties:
+        userId: {type: integer, format: int64}
+        programId: {type: integer, format: int64}
+        programName: {type: string}
+        level: {type: integer, minimum: 1, example: 3}
+        maxCreditHours: {type: integer, example: 18}
+        advisor:
+          type: object
+          allOf: [$ref: "#/components/schemas/DoctorRef"]
+          nullable: true
+
+    StudentProfileInput:
+      type: object
+      required: [programId, level, maxCreditHours]
+      properties:
+        programId: {type: integer, format: int64}
+        level: {type: integer, minimum: 1}
+        maxCreditHours: {type: integer, minimum: 1, maximum: 30}
+        advisorId: {type: integer, format: int64, nullable: true}
+
+    PlanCourse:
+      type: object
+      required: [planCourseId, programId, course, level, termType]
+      properties:
+        planCourseId: {type: integer, format: int64}
+        programId: {type: integer, format: int64}
+        course: {$ref: "#/components/schemas/Course"}
+        level: {type: integer}
+        termType: {$ref: "#/components/schemas/TermType"}
+
+    PlanCourseInput:
+      type: object
+      required: [courseId, level, termType]
+      properties:
+        courseId: {type: integer, format: int64}
+        level: {type: integer, minimum: 1}
+        termType: {$ref: "#/components/schemas/TermType"}
+
+    AvailableOffering:
+      type: object
+      required: [offeringId, course, section, seatsLeft]
+      properties:
+        offeringId: {type: integer, format: int64}
+        course: {$ref: "#/components/schemas/Course"}
+        section: {type: string}
+        capacity: {type: integer, nullable: true}
+        seatsLeft: {type: integer}
+        doctorNames:
+          type: array
+          items: {type: string}
+        schedule:
+          type: array
+          description: Weekly meetings of its groups.
+          items:
+            type: object
+            properties:
+              groupType: {$ref: "#/components/schemas/GroupType"}
+              label: {type: string}
+              dayOfWeek: {$ref: "#/components/schemas/DayOfWeek"}
+              startTime: {type: string, example: "10:00"}
+              endTime: {type: string, example: "11:30"}
+        alreadyChosen: {type: boolean}
+
+    RegistrationStatus:
+      type: string
+      description: |
+        DRAFT (student choosing) -> SUBMITTED (waiting for advisor) ->
+        ADVISOR_APPROVED (waiting for admin) -> APPROVED (enrollments created).
+        RETURNED = sent back to the student with a note; they edit and submit again.
+      enum: [DRAFT, SUBMITTED, ADVISOR_APPROVED, APPROVED, RETURNED]
+
+    RegistrationRequest:
+      type: object
+      required: [requestId, student, termId, status, totalCredits, items]
+      properties:
+        requestId: {type: integer, format: int64}
+        student: {$ref: "#/components/schemas/StudentRef"}
+        termId: {type: integer, format: int64}
+        status: {$ref: "#/components/schemas/RegistrationStatus"}
+        totalCredits: {type: integer}
+        maxCreditHours: {type: integer}
+        advisor:
+          type: object
+          allOf: [$ref: "#/components/schemas/DoctorRef"]
+          nullable: true
+        note: {type: string, nullable: true, description: "Last note from the advisor or admin."}
+        submittedAt: {type: string, format: date-time, nullable: true}
+        advisorDecidedAt: {type: string, format: date-time, nullable: true}
+        adminDecidedAt: {type: string, format: date-time, nullable: true}
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/RegistrationItem"}
+
+    RegistrationItem:
+      type: object
+      required: [itemId, offeringId, courseCode, courseTitle, creditHours]
+      properties:
+        itemId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64}
+        courseCode: {type: string}
+        courseTitle: {type: string}
+        section: {type: string}
+        creditHours: {type: integer}
+        status: {type: string, enum: [PENDING, ENROLLED]}
+
+    SaveRegistrationRequest:
+      type: object
+      required: [termId, offeringIds]
+      properties:
+        termId: {type: integer, format: int64}
+        offeringIds:
+          type: array
+          items: {type: integer, format: int64}
+
+    RegistrationDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision: {type: string, enum: [APPROVE, RETURN]}
+        note: {type: string, maxLength: 1000, description: "Required for RETURN."}
+
+    # -------------------------------------------------------- misc
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, format: email}
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token: {type: string, description: "From the emailed link."}
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
+
+    GradeChangePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: "#/components/schemas/GradeChange"}
+        page: {$ref: "#/components/schemas/PageMeta"}
+
+    AdminStats:
+      type: object
+      properties:
+        activeUsers: {type: integer}
+        students: {type: integer}
+        doctors: {type: integer}
+        admins: {type: integer}
+        currentTermLabel: {type: string, nullable: true}
+        currentTermOfferings: {type: integer}
+        rooms: {type: integer}
+        pendingRegistrations: {type: integer}
+        openTickets: {type: integer}
+
+    TeachingSummary:
+      type: object
+      properties:
+        termLabel: {type: string}
+        courses: {type: integer}
+        students: {type: integer}
+        avgAttendancePercent: {type: number, nullable: true}
+        ungradedSubmissions: {type: integer}
+        openTickets: {type: integer}
+        studentsOverAbsenceLimit: {type: integer}
+        pendingAdvisorRequests: {type: integer}
+        approvedNotSentMarks: {type: integer, description: "Approved marks not emailed to students yet."}
+
+    UpcomingItem:
+      type: object
+      required: [type, title, dueAt]
+      properties:
+        type: {type: string, enum: [ASSIGNMENT, REGISTRATION]}
+        title: {type: string}
+        courseCode: {type: string, nullable: true}
+        gradeItemId: {type: integer, format: int64, nullable: true}
+        dueAt: {type: string, format: date-time}
+        status: {type: string, enum: [TODO, SUBMITTED, PAST_DUE, WAITING]}
+
+    EscalateRequest:
+      type: object
+      properties:
+        note: {type: string, maxLength: 2000, description: "What is still unclear."}
+
+    # ------------------------------------------------------------------ AI
+    AiConversation:
+      type: object
+      required: [conversationId, createdAt]
+      properties:
+        conversationId: {type: integer, format: int64}
+        offeringId: {type: integer, format: int64, nullable: true}
+        title: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+
+    AiMessage:
+      type: object
+      required: [messageId, sender, content, createdAt]
+      properties:
+        messageId: {type: integer, format: int64}
+        sender: {type: string, enum: [USER, ASSISTANT]}
+        content: {type: string}
+        createdAt: {type: string, format: date-time}
+        citations:
+          type: array
+          description: Where the answer came from (only on ASSISTANT messages).
+          items: {$ref: "#/components/schemas/AiCitation"}
+
+    AiCitation:
+      type: object
+      required: [rank, materialId, materialTitle]
+      properties:
+        rank: {type: integer, description: "1 = most relevant."}
+        materialId: {type: integer, format: int64}
+        materialTitle: {type: string, example: Lecture 3 - Normalization}
+        pageNo: {type: integer, nullable: true}
+        snippet: {type: string, description: "Short piece of the source text."}
