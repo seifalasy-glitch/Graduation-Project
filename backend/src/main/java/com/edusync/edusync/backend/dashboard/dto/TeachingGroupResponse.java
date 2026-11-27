@@ -14,6 +14,6 @@ public record TeachingGroupResponse(
         String termLabel,
         int enrolledCount,
         Integer capacity,
-        BigDecimal avgAttendancePercent   // null until the attendance module exists
+        BigDecimal avgAttendancePercent   // all roster slots of finished sessions; null = none finished yet
 ) {
 }

@@ -1,10 +1,13 @@
 package com.edusync.edusync.backend.attendance.dto;
 
+import com.edusync.edusync.backend.enrollment.dto.DoctorRef;
 import com.edusync.edusync.backend.enrollment.dto.StudentRef;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Request / response shapes of the attendance endpoints (names = schemas in docs/openapi.yaml). */
 public final class AttendanceDtos {
@@ -75,5 +78,53 @@ public final class AttendanceDtos {
 
     /** CheckInResponse */
     public record CheckInResponse(Long sessionId, String courseCode, String status, Instant markedAt) {
+    }
+
+    // ------------------------------------------------------------ phase B
+
+    /** CorrectionRequest */
+    public record CorrectionRequest(
+            @NotBlank(message = "newStatus is required") String newStatus,
+            @NotBlank(message = "reason is required") String reason
+    ) {
+    }
+
+    /** AttendanceChange. oldStatus null = the student had no mark before the correction. */
+    public record AttendanceChangeResponse(
+            Long changeId,
+            Long recordId,
+            DoctorRef doctor,
+            String oldStatus,
+            String newStatus,
+            String reason,
+            Instant changedAt
+    ) {
+    }
+
+    /** AttendanceSummaryRow. Counts finished sessions only; attendancePercent null = none finished yet. */
+    public record SummaryRow(
+            Long enrollmentId,
+            StudentRef student,
+            int sessionsTotal,
+            int present,
+            int late,
+            int absent,
+            int unmarked,
+            BigDecimal attendancePercent
+    ) {
+    }
+
+    /** MyAttendance. Totals count finished sessions; `sessions` lists all of them, newest first. */
+    public record MyAttendance(
+            Long offeringId,
+            int present,
+            int late,
+            int absent,
+            BigDecimal attendancePercent,
+            List<MySession> sessions
+    ) {
+    }
+
+    public record MySession(Long sessionId, Instant startsAt, String groupType, String groupLabel, String status) {
     }
 }

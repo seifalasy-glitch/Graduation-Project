@@ -1786,7 +1786,11 @@ paths:
       operationId: postAttendanceSessionsBySessionIdRecordsByEnrollmentIdCorrection
       description: |
         A reason from a fixed list is required. Old value, new value, doctor and
-        reason are saved in ATTENDANCE_CHANGE.
+        reason are saved in ATTENDANCE_CHANGE. A student who was never marked can be
+        corrected too (oldStatus = null). Only the doctor currently teaching the group.
+        Errors: VALIDATION_ERROR (400, also when newStatus equals the current status),
+        NOT_YOUR_GROUP (403), NOT_IN_GROUP (403), SESSION_NOT_FOUND (404),
+        SESSION_NOT_FINISHED (409, before finishing use PUT .../records/{enrollmentId}).
       x-roles: [DOCTOR]
       parameters:
         - {$ref: "#/components/parameters/SessionId"}
@@ -1811,6 +1815,9 @@ paths:
       tags: [Attendance - Doctor]
       summary: Correction history of one attendance mark
       operationId: getAttendanceRecordsByRecordIdChanges
+      description: |
+        Admin, or a doctor who teaches or taught the group.
+        Errors: RECORD_NOT_FOUND (404, also when you may not see it).
       x-roles: [DOCTOR, ADMIN]
       parameters:
         - {$ref: "#/components/parameters/RecordId"}
@@ -1830,7 +1837,12 @@ paths:
       tags: [Attendance - Doctor]
       summary: Attendance totals per student in a course
       operationId: getOfferingsByOfferingIdAttendanceSummary
-      description: For the doctor's report screen. Doctors see only the groups they teach.
+      description: |
+        For the doctor's report screen. Doctors see only the groups they teach (or taught).
+        One row per student of those groups (withdrawn students left out).
+        Numbers count FINISHED sessions only (a class in progress is not counted).
+        Errors: OFFERING_NOT_FOUND (404, also for a doctor with no group in the course),
+        GROUP_NOT_FOUND (404, groupId not in this course), NOT_YOUR_GROUP (403).
       x-roles: [DOCTOR, ADMIN]
       parameters:
         - {$ref: "#/components/parameters/OfferingId"}
@@ -1881,6 +1893,10 @@ paths:
       tags: [Attendance - Student]
       summary: My attendance in one course
       operationId: getMeAttendance
+      description: |
+        Totals and percentage count FINISHED sessions only; `sessions` lists every
+        session I was on the roster of (newest first), including one in progress.
+        Errors: OFFERING_NOT_FOUND (404, not enrolled in this course).
       x-roles: [STUDENT]
       parameters:
         - {$ref: "#/components/parameters/OfferingIdQuery"}
@@ -3827,7 +3843,7 @@ components:
         late: {type: integer}
         absent: {type: integer}
         unmarked: {type: integer}
-        attendancePercent: {type: number, example: 87.5, description: "(present + late) / sessions."}
+        attendancePercent: {type: number, nullable: true, example: 87.5, description: "(present + late) / finished sessions x 100, 1 decimal. null = no finished session yet."}
 
     AttendanceWarningRule:
       type: object
@@ -3892,7 +3908,7 @@ components:
         present: {type: integer}
         late: {type: integer}
         absent: {type: integer}
-        attendancePercent: {type: number}
+        attendancePercent: {type: number, nullable: true, description: "(present + late) / finished sessions x 100, 1 decimal. null = no finished session yet."}
         sessions:
           type: array
           items:

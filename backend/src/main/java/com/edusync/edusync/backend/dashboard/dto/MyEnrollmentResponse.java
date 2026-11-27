@@ -14,7 +14,7 @@ public record MyEnrollmentResponse(
         String termLabel,
         String programName,
         List<String> doctorNames,
-        BigDecimal attendancePercent,   // null until the attendance module exists
+        BigDecimal attendancePercent,   // (present + late) / finished sessions; null = none finished yet
         List<GroupResponse> groups
 ) {
 }

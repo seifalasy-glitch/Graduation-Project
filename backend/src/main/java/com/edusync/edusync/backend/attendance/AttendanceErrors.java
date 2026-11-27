@@ -52,6 +52,15 @@ public final class AttendanceErrors {
                 "Connect to the classroom Wi-Fi to scan this QR code");
     }
 
+    public static ApiException sessionNotFinished() {
+        return of(HttpStatus.CONFLICT, "SESSION_NOT_FINISHED",
+                "Finish the session first; until then mark the student normally");
+    }
+
+    public static ApiException recordNotFound() {
+        return of(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "Attendance record not found");
+    }
+
     private static ApiException of(HttpStatus status, String code, String message) {
         return new ApiException(status, code, message);
     }

@@ -3,6 +3,8 @@ package com.edusync.edusync.backend.dashboard.service;
 import com.edusync.edusync.backend.academic.entity.AcademicTerm;
 import com.edusync.edusync.backend.academic.repository.AcademicTermRepository;
 import com.edusync.edusync.backend.academic.service.CurrentTermService;
+import com.edusync.edusync.backend.attendance.repository.AttendanceStatsQueries;
+import com.edusync.edusync.backend.attendance.repository.AttendanceStatsQueries.Totals;
 import com.edusync.edusync.backend.dashboard.dto.MyEnrollmentResponse;
 import com.edusync.edusync.backend.dashboard.dto.TeachingGroupResponse;
 import com.edusync.edusync.backend.dashboard.repository.DashboardQueries;
@@ -36,7 +38,8 @@ import java.util.stream.Collectors;
  *  - the current term: memberships and assignments active right now;
  *  - any other term: the ones active at some point between its start and end dates.
  *
- * attendancePercent / avgAttendancePercent stay null until the attendance module exists.
+ * attendancePercent (student) / avgAttendancePercent (group): (present + late) / slots of
+ * FINISHED sessions, see AttendanceStatsQueries; null when no session is finished yet.
  */
 @Service
 public class MyDashboardService {
@@ -50,17 +53,20 @@ public class MyDashboardService {
     private final CurrentTermService currentTerm;
     private final AcademicTermRepository termRepository;
     private final DashboardQueries queries;
+    private final AttendanceStatsQueries stats;
 
     public MyDashboardService(
             CurrentUserService currentUser,
             CurrentTermService currentTerm,
             AcademicTermRepository termRepository,
-            DashboardQueries queries
+            DashboardQueries queries,
+            AttendanceStatsQueries stats
     ) {
         this.currentUser = currentUser;
         this.currentTerm = currentTerm;
         this.termRepository = termRepository;
         this.queries = queries;
+        this.stats = stats;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +91,8 @@ public class MyDashboardService {
                 : queries.memberCounts(groupRows.stream().map(GroupRow::groupId).collect(Collectors.toSet()),
                 window.from, window.to);
 
+        Map<Long, Totals> attendance = stats.totalsByEnrollment(enrollmentIds);
+
         Map<Long, List<GroupResponse>> groupsByEnrollment = new HashMap<>();
         for (GroupRow g : groupRows) {
             groupsByEnrollment.computeIfAbsent(g.ownerId(), k -> new ArrayList<>()).add(toGroup(g, members));
@@ -99,7 +107,7 @@ public class MyDashboardService {
                         CurrentTermService.label(r.termType(), r.academicYear()),
                         r.programName(),
                         doctors.getOrDefault(r.offeringId(), List.of()),
-                        null,
+                        attendance.getOrDefault(r.enrollmentId(), Totals.NONE).percent(),
                         groupsByEnrollment.getOrDefault(r.enrollmentId(), List.of())))
                 .toList();
     }
@@ -118,9 +126,9 @@ public class MyDashboardService {
             return List.of();
         }
 
-        Map<Long, Integer> members = queries.memberCounts(
-                rows.stream().map(r -> r.group().groupId()).collect(Collectors.toSet()),
-                window.from, window.to);
+        Set<Long> groupIds = rows.stream().map(r -> r.group().groupId()).collect(Collectors.toSet());
+        Map<Long, Integer> members = queries.memberCounts(groupIds, window.from, window.to);
+        Map<Long, Totals> attendance = stats.totalsByGroup(groupIds);
 
         return rows.stream()
                 .map(r -> new TeachingGroupResponse(
@@ -132,7 +140,7 @@ public class MyDashboardService {
                         CurrentTermService.label(r.termType(), r.academicYear()),
                         r.enrolledCount(),
                         r.capacity(),
-                        null))
+                        attendance.getOrDefault(r.group().groupId(), Totals.NONE).percent()))
                 .toList();
     }
 
