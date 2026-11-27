@@ -23,6 +23,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
  * finished or corrected, or the rule is saved turned on, the course is re-checked:
  * a student whose absences reach the limit for the first time gets ONE warning row and
  * ONE email (never repeated for the same rule, even if the limit changes later).
+ * If that email fails, every later re-check sends it again until it goes out.
  *
  * Absences = ABSENT + unmarked (finished sessions) + 1 per 2 LATE (see WarningQueries).
  *
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 public class AttendanceWarningService {
 
     static final List<String> GROUP_TYPES = List.of("LECTURE", "PRACTICAL");
+    static final Duration RETRY_AFTER = Duration.ofMinutes(10);
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     private final WarningQueries queries;
@@ -147,11 +150,20 @@ public class AttendanceWarningService {
         RuleRow rule = found.get();
         LocalDateTime now = LocalDateTime.now();
 
-        for (Absences a : queries.absences(offeringId, groupType, null).values()) {
+        Map<Long, Absences> absences = queries.absences(offeringId, groupType, null);
+        for (Absences a : absences.values()) {
             if (a.absenceCount() >= rule.absenceLimit()) {
                 queries.insertWarningOnce(a.enrollmentId(), rule.ruleId(), a.absenceCount(), a.late(), now)
                         .ifPresent(warningId -> emailWarning(warningId, a, rule));
             }
+        }
+
+        // Retry: a warning whose email failed (Gmail down, wrong password...) still has no
+        // emailed_at; send it again with the current numbers. Only warnings issued more than
+        // RETRY_AFTER ago, so an email that is still on its way is not sent twice.
+        for (long[] w : queries.unsentWarnings(rule.ruleId(), now.minus(RETRY_AFTER))) {
+            Absences current = absences.getOrDefault(w[1], new Absences(w[1], (int) w[2], (int) w[3], List.of()));
+            emailWarning(w[0], current, rule);
         }
     }
 

@@ -108,6 +108,42 @@ class AttendanceWarningEmailTest {
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
+    @Test
+    void failedEmail_isRetried_onTheNextCheck() throws Exception {
+        // a warning from an hour ago whose email never went out (emailed_at empty)
+        long warning = id("INSERT INTO attendance_warning (enrollment_id, rule_id, absence_count, late_count, issued_at) "
+                + "VALUES (?, ?, 1, 0, ?) RETURNING warning_id", enrollment, rule, LocalDateTime.now().minusHours(1));
+
+        warnings.recheck(offering, "PRACTICAL");
+
+        verify(mailSender, timeout(5000).times(1)).send(any(SimpleMailMessage.class));
+        assertNotNull(waitForEmailedAt(warning), "emailed_at was not set after the retry");
+    }
+
+    @Test
+    void recentUnsentWarning_isNotSentTwice() throws Exception {
+        // issued a moment ago: its email may still be on the way, so no retry yet
+        id("INSERT INTO attendance_warning (enrollment_id, rule_id, absence_count, late_count, issued_at) "
+                + "VALUES (?, ?, 1, 0, ?) RETURNING warning_id", enrollment, rule, LocalDateTime.now());
+
+        warnings.recheck(offering, "PRACTICAL");
+        Thread.sleep(500);
+
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+    }
+
+    private LocalDateTime waitForEmailedAt(long warning) throws InterruptedException {
+        for (int i = 0; i < 50; i++) {
+            LocalDateTime at = jdbc.queryForObject("SELECT emailed_at FROM attendance_warning WHERE warning_id = ?",
+                    LocalDateTime.class, warning);
+            if (at != null) {
+                return at;
+            }
+            Thread.sleep(100);
+        }
+        return null;
+    }
+
     private long id(String sql, Object... args) {
         return jdbc.queryForObject(sql, Long.class, args);
     }

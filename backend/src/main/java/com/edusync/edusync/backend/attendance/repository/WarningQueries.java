@@ -145,6 +145,21 @@ public class WarningQueries {
                 (rs, i) -> rs.getLong(1)).stream().findFirst();
     }
 
+    /**
+     * Warnings of the rule whose email never went out (emailed_at empty), issued before
+     * :olderThan, for students not withdrawn. Returns [warningId, enrollmentId, absenceCount, lateCount].
+     */
+    public List<long[]> unsentWarnings(long ruleId, LocalDateTime olderThan) {
+        return jdbc.query("""
+                SELECT w.warning_id, w.enrollment_id, w.absence_count, w.late_count
+                FROM attendance_warning w JOIN enrollment e ON e.enrollment_id = w.enrollment_id
+                WHERE w.rule_id = :r AND w.emailed_at IS NULL AND w.issued_at <= :before
+                  AND e.status <> 'WITHDRAWN'
+                ORDER BY w.warning_id
+                """, Map.of("r", ruleId, "before", olderThan),
+                (rs, i) -> new long[]{rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4)});
+    }
+
     public void markEmailed(long warningId, LocalDateTime when) {
         jdbc.update("UPDATE attendance_warning SET emailed_at = :when WHERE warning_id = :id",
                 Map.of("id", warningId, "when", when));

@@ -1945,6 +1945,8 @@ paths:
         + one for every 2 LATE marks (finished sessions only, withdrawn students skipped).
         The first time a student's absences reach the limit, one ATTENDANCE_WARNING row is created and the student
         is emailed (once; it is never repeated for the same rule, even if the limit changes).
+        If that email fails (emailedAt stays null), every later re-check of the course sends
+        it again (only for warnings older than 10 minutes, so a mail still on its way is not doubled).
         Turning warnings off without absenceLimit keeps the old limit.
         {doctorFullName} = the doctor who last saved the rule. Only a doctor who
         currently teaches a group of the course may change it.
