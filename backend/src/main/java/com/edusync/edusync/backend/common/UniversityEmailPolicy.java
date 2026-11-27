@@ -18,8 +18,13 @@ public class UniversityEmailPolicy {
     public UniversityEmailPolicy(
             @Value("${app.university-email-domain:sci.asu.edu.eg}") String domain
     ) {
-        // trim: the property in application.properties may contain trailing spaces
+        // trim: an env var set by hand (UNIVERSITY_EMAIL_DOMAIN) can carry stray spaces
         this.domain = domain.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** The domain without the "@", lower case, e.g. "sci.asu.edu.eg" (used in error messages). */
+    public String domain() {
+        return domain;
     }
 
     public boolean isUniversityEmail(String email) {

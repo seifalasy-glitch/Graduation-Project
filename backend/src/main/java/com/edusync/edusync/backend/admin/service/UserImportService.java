@@ -3,6 +3,7 @@ package com.edusync.edusync.backend.admin.service;
 import com.edusync.edusync.backend.admin.dto.BulkImportResult;
 import com.edusync.edusync.backend.admin.dto.ImportRowError;
 import com.edusync.edusync.backend.auth.service.EmailService;
+import com.edusync.edusync.backend.common.UniversityEmailPolicy;
 import com.edusync.edusync.backend.users.entity.User;
 import com.edusync.edusync.backend.users.entity.UserRole;
 import com.edusync.edusync.backend.users.repository.UserRepository;
@@ -15,7 +16,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +56,8 @@ public class UserImportService {
     private final PasswordEncoder passwordEncoder;
     private final TemporaryPasswordGenerator passwordGenerator;
     private final EmailService emailService;
-    private final String universityEmailDomain;
+    // Same university-email rule as the single-user form (POST /admin/users)
+    private final UniversityEmailPolicy emailPolicy;
 
     public UserImportService(
             UserRepository userRepository,
@@ -64,14 +65,14 @@ public class UserImportService {
             PasswordEncoder passwordEncoder,
             TemporaryPasswordGenerator passwordGenerator,
             EmailService emailService,
-            @Value("${app.university-email-domain:}") String universityEmailDomain
+            UniversityEmailPolicy emailPolicy
     ) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordGenerator = passwordGenerator;
         this.emailService = emailService;
-        this.universityEmailDomain = universityEmailDomain.trim().toLowerCase(Locale.ROOT);
+        this.emailPolicy = emailPolicy;
     }
 
     // ===================== Part 1: the empty template =====================
@@ -300,10 +301,9 @@ public class UserImportService {
         if (!row.email().isEmpty()) {
             if (!EMAIL_PATTERN.matcher(row.email()).matches()) {
                 errors.add(error(row, "Email", "INVALID_EMAIL", "This is not a valid email"));
-            } else if (!universityEmailDomain.isEmpty()
-                    && !row.email().endsWith("@" + universityEmailDomain)) {
+            } else if (!emailPolicy.isUniversityEmail(row.email())) {
                 errors.add(error(row, "Email", "NOT_UNIVERSITY_EMAIL",
-                        "The email must end with @" + universityEmailDomain));
+                        "The email must end with @" + emailPolicy.domain()));
             }
         }
 
