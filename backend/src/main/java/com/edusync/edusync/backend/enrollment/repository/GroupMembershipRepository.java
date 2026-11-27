@@ -2,6 +2,7 @@ package com.edusync.edusync.backend.enrollment.repository;
 
 import com.edusync.edusync.backend.enrollment.entity.GroupMembership;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,6 +19,21 @@ public interface GroupMembershipRepository extends JpaRepository<GroupMembership
 
     @Query("select m.groupId from GroupMembership m where m.membershipId = :membershipId")
     Optional<Long> findGroupId(@Param("membershipId") Long membershipId);
+
+    /** Withdrawing: memberships that already started and are still open end at :now. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update GroupMembership m set m.endsAt = :now
+            where m.enrollmentId = :enrollmentId
+              and m.startsAt < :now
+              and (m.endsAt is null or m.endsAt > :now)
+            """)
+    int endOpenMemberships(@Param("enrollmentId") Long enrollmentId, @Param("now") LocalDateTime now);
+
+    /** Withdrawing: memberships that have not started yet are removed (they never happened). */
+    @Modifying(flushAutomatically = true)
+    @Query("delete from GroupMembership m where m.enrollmentId = :enrollmentId and m.startsAt >= :now")
+    int deleteFutureMemberships(@Param("enrollmentId") Long enrollmentId, @Param("now") LocalDateTime now);
 
     @Query("""
             select case when count(m) > 0 then true else false end

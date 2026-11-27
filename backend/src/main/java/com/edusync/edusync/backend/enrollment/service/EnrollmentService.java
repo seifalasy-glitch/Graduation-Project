@@ -12,10 +12,12 @@ import com.edusync.edusync.backend.enrollment.dto.UpdateEnrollmentRequest;
 import com.edusync.edusync.backend.enrollment.entity.Enrollment;
 import com.edusync.edusync.backend.enrollment.exception.EnrollmentErrors;
 import com.edusync.edusync.backend.enrollment.repository.EnrollmentRepository;
+import com.edusync.edusync.backend.enrollment.repository.GroupMembershipRepository;
 import com.edusync.edusync.backend.users.entity.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -27,9 +29,11 @@ import java.util.stream.Collectors;
 public class EnrollmentService {
 
     private static final String ACTIVE = "ACTIVE";
-    private static final Set<String> STATUSES = Set.of(ACTIVE, "WITHDRAWN", "COMPLETED");
+    private static final String WITHDRAWN = "WITHDRAWN";
+    private static final Set<String> STATUSES = Set.of(ACTIVE, WITHDRAWN, "COMPLETED");
 
     private final EnrollmentRepository enrollmentRepository;
+    private final GroupMembershipRepository membershipRepository;
     private final CourseOfferingRepository offeringRepository;
     private final AcademicProgramRepository programRepository;
     private final PeopleService people;
@@ -37,12 +41,14 @@ public class EnrollmentService {
 
     public EnrollmentService(
             EnrollmentRepository enrollmentRepository,
+            GroupMembershipRepository membershipRepository,
             CourseOfferingRepository offeringRepository,
             AcademicProgramRepository programRepository,
             PeopleService people,
             OfferingAccessService access
     ) {
         this.enrollmentRepository = enrollmentRepository;
+        this.membershipRepository = membershipRepository;
         this.offeringRepository = offeringRepository;
         this.programRepository = programRepository;
         this.people = people;
@@ -133,6 +139,15 @@ public class EnrollmentService {
                 }
 
                 ensureFreeSeat(offering);
+            }
+
+            // A withdrawn student leaves all groups of this offering, so group member
+            // counts and attendance lists no longer include them. Setting the status back
+            // to ACTIVE does NOT restore the groups: the admin adds them again.
+            if (WITHDRAWN.equals(status) && !WITHDRAWN.equals(enrollment.getStatus())) {
+                LocalDateTime now = LocalDateTime.now();
+                membershipRepository.endOpenMemberships(enrollmentId, now);
+                membershipRepository.deleteFutureMemberships(enrollmentId, now);
             }
 
             enrollment.setStatus(status);
