@@ -133,6 +133,19 @@
 			<version>5.4.1</version>
 		</dependency>
 
+		<!-- PDF reports from HTML (absence list). rtl-support = Arabic right-to-left + letter shaping.
+		     Pinned to a release from Oct 2026 (the project publishes many versions per day). -->
+		<dependency>
+			<groupId>io.github.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-pdfbox</artifactId>
+			<version>1.1.100</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-rtl-support</artifactId>
+			<version>1.1.100</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

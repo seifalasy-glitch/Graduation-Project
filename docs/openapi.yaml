@@ -2026,7 +2026,12 @@ paths:
           Footer: two signature blocks (program coordinator, head of department),
                   names taken from backend settings.
         Week number = week of the term the session fell in (from ACADEMIC_TERM.start_date).
-        Generated on demand; nothing is stored.
+        Generated on demand; nothing is stored. Same students and order as GET
+        .../attendance-warnings?groupType=. Settings (env vars): APP_REPORTS_FACULTY,
+        APP_REPORTS_DEPARTMENT, APP_REPORTS_SIGNATURE_RIGHT_TITLE / _NAME,
+        APP_REPORTS_SIGNATURE_LEFT_TITLE / _NAME (names empty = dotted line to sign on).
+        Errors: VALIDATION_ERROR (400, groupType missing or wrong), NOT_YOUR_COURSE (403),
+        OFFERING_NOT_FOUND (404), NO_SUCH_GROUP_TYPE (409).
       x-roles: [DOCTOR, ADMIN]
       parameters:
         - {$ref: "#/components/parameters/OfferingId"}

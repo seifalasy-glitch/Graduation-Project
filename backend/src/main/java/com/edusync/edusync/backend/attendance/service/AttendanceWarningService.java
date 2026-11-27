@@ -61,6 +61,7 @@ public class AttendanceWarningService {
     private final AfterCommitMailer mailer;
     private final JavaMailSender mailSender;
     private final String senderEmail;
+    private final AbsenceListPdf pdfs;
 
     public AttendanceWarningService(
             WarningQueries queries,
@@ -68,7 +69,8 @@ public class AttendanceWarningService {
             CurrentUserService currentUser,
             AfterCommitMailer mailer,
             JavaMailSender mailSender,
-            @Value("${spring.mail.username}") String senderEmail
+            @Value("${spring.mail.username}") String senderEmail,
+            AbsenceListPdf pdfs
     ) {
         this.queries = queries;
         this.stats = stats;
@@ -76,6 +78,7 @@ public class AttendanceWarningService {
         this.mailer = mailer;
         this.mailSender = mailSender;
         this.senderEmail = senderEmail;
+        this.pdfs = pdfs;
     }
 
     // ================================================================ rules
@@ -185,6 +188,77 @@ public class AttendanceWarningService {
                         .thenComparing(w -> w.student().universityId()))
                 .toList();
     }
+
+    /** A ready PDF and its file name. */
+    public record Report(String fileName, byte[] pdf) {
+    }
+
+    /**
+     * GET /offerings/{id}/attendance-warnings/report?groupType=: the department's Arabic
+     * absence list, same rows and order as the warnings list. Generated on demand, not stored.
+     */
+    @Transactional(readOnly = true)
+    public Report report(long offeringId, String groupTypeText) {
+        String groupType = groupTypeText == null ? "" : groupTypeText.trim().toUpperCase(Locale.ROOT);
+        if (!GROUP_TYPES.contains(groupType)) {
+            throw AcademicErrors.validation("groupType", "groupType must be LECTURE or PRACTICAL");
+        }
+        List<WarningResponse> warnings = warningsOfOffering(offeringId, groupType);   // checks access too
+        if (!queries.groupTypesOfOffering(offeringId).contains(groupType)) {
+            throw AttendanceErrors.noSuchGroupType();
+        }
+        CourseInfo course = queries.course(offeringId).orElseThrow(AcademicErrors::offeringNotFound);
+        Map<Long, GroupInfo> groups = queries.latestGroups(
+                warnings.stream().map(WarningResponse::enrollmentId).toList(), groupType);
+
+        List<AbsenceListPdf.Row> rows = warnings.stream()
+                .map(w -> new AbsenceListPdf.Row(
+                        w.student().fullNameAr() != null && !w.student().fullNameAr().isBlank()
+                                ? w.student().fullNameAr() : w.student().fullName(),
+                        w.programName(),
+                        arabicGroup(groups.get(w.enrollmentId())),
+                        w.absenceCount(),
+                        // the sample writes the weeks left to right: "1، 2، 3"
+                        w.absentWeeks().isEmpty() ? "" : AbsenceListPdf.ltr(
+                                w.absentWeeks().stream().map(String::valueOf).collect(Collectors.joining("، ")))))
+                .toList();
+        String programs = warnings.stream().map(WarningResponse::programName)
+                .filter(p -> p != null && !p.isBlank()).distinct().collect(Collectors.joining(" / "));
+
+        byte[] pdf = pdfs.render(new AbsenceListPdf.Page(
+                programs, course.courseCode(), course.title(), arabicTerm(course.termType()),
+                course.academicYear(), "LECTURE".equals(groupType) ? "المحاضرة" : "المعمل", rows));
+        return new Report("absence-list-" + course.courseCode() + "-" + groupType + ".pdf", pdf);
+    }
+
+    /** "معمل أ — الأربعاء 12:00–14:00" style cell: group label, Arabic day, time. */
+    static String arabicGroup(GroupInfo g) {
+        if (g == null) {
+            return "";
+        }
+        StringBuilder s = new StringBuilder(g.label());
+        String day = ARABIC_DAYS.get(g.dayOfWeek() == null ? "" : g.dayOfWeek().toUpperCase(Locale.ROOT));
+        if (day != null) {
+            s.append(" — ").append(day);
+            if (g.startTime() != null && g.endTime() != null) {
+                s.append(" ").append(AbsenceListPdf.ltr(g.startTime().format(TIME) + "–" + g.endTime().format(TIME)));
+            }
+        }
+        return s.toString();
+    }
+
+    static String arabicTerm(String termType) {
+        return switch (termType == null ? "" : termType.toUpperCase(Locale.ROOT)) {
+            case "FALL" -> "الفصل الأول";
+            case "SPRING" -> "الفصل الثاني";
+            case "SUMMER" -> "الفصل الصيفي";
+            default -> termType == null ? "" : termType;
+        };
+    }
+
+    private static final Map<String, String> ARABIC_DAYS = Map.of(
+            "SATURDAY", "السبت", "SUNDAY", "الأحد", "MONDAY", "الاثنين", "TUESDAY", "الثلاثاء",
+            "WEDNESDAY", "الأربعاء", "THURSDAY", "الخميس", "FRIDAY", "الجمعة");
 
     /** GET /me/attendance-warnings, newest first. */
     @Transactional(readOnly = true)

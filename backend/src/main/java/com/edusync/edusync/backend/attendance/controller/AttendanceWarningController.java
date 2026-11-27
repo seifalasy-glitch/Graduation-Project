@@ -5,13 +5,16 @@ import com.edusync.edusync.backend.attendance.dto.AttendanceDtos.WarningRuleInpu
 import com.edusync.edusync.backend.attendance.dto.AttendanceDtos.WarningRuleResponse;
 import com.edusync.edusync.backend.attendance.service.AttendanceWarningService;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/** Attendance warnings, phase C1 (tag "Attendance Warnings"). The PDF report comes in C2. */
+/** Attendance warnings (tag "Attendance Warnings"): rules, lists and the department's PDF. */
 @RestController
 @RequestMapping("/api")
 public class AttendanceWarningController {
@@ -40,6 +43,18 @@ public class AttendanceWarningController {
     public ResponseEntity<List<WarningResponse>> ofOffering(@PathVariable long offeringId,
                                                             @RequestParam(required = false) String groupType) {
         return ResponseEntity.ok(warnings.warningsOfOffering(offeringId, groupType));
+    }
+
+    /** The department's Arabic absence list as a PDF download (built on demand, not stored). */
+    @GetMapping("/offerings/{offeringId}/attendance-warnings/report")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
+    public ResponseEntity<byte[]> report(@PathVariable long offeringId, @RequestParam String groupType) {
+        AttendanceWarningService.Report report = warnings.report(offeringId, groupType);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(report.fileName()).build().toString())
+                .body(report.pdf());
     }
 
     @GetMapping("/me/attendance-warnings")

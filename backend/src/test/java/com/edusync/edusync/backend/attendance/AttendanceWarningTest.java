@@ -203,6 +203,50 @@ class AttendanceWarningTest {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
+    // ================================================================ PDF report (C2)
+
+    @Test
+    void report_isAPdf_withTheCourseAndStudents() throws Exception {
+        rule(D1, "LECTURE", "{\"enabled\":true,\"absenceLimit\":2}");
+        jdbc.update("UPDATE users SET full_name_ar = 'عمار خالد حسن' WHERE university_id = 'wrn.s1'");
+
+        var result = mvc.perform(get("/api/offerings/" + offering + "/attendance-warnings/report")
+                        .param("groupType", "LECTURE").with(user(D1).roles("DOCTOR")))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Content-Type", "application/pdf"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Content-Disposition", containsString("absence-list-WRN101-LECTURE.pdf")))
+                .andReturn();
+        byte[] pdf = result.getResponse().getContentAsByteArray();
+        assertEquals("%PDF", new String(pdf, 0, 4));
+
+        try (var doc = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+            assertEquals(1, doc.getNumberOfPages());
+            float w = doc.getPage(0).getMediaBox().getWidth(), h = doc.getPage(0).getMediaBox().getHeight();
+            org.junit.jupiter.api.Assertions.assertTrue(w > h, "page is not landscape");
+            String text = new org.apache.pdfbox.text.PDFTextStripper().getText(doc);
+            org.junit.jupiter.api.Assertions.assertTrue(text.contains("WRN101"), text);
+        }
+
+        // kept for a visual check next to the faculty's sample (build output, not committed)
+        java.nio.file.Path out = java.nio.file.Path.of("target", "reports", "absence-list-test.pdf");
+        java.nio.file.Files.createDirectories(out.getParent());
+        java.nio.file.Files.write(out, pdf);
+    }
+
+    @Test
+    void report_errors() throws Exception {
+        mvc.perform(get("/api/offerings/" + offering + "/attendance-warnings/report").with(user(D1).roles("DOCTOR")))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/offerings/" + offering + "/attendance-warnings/report").param("groupType", "PRACTICAL")
+                        .with(user(D1).roles("DOCTOR")))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("NO_SUCH_GROUP_TYPE"));
+        mvc.perform(get("/api/offerings/" + offering + "/attendance-warnings/report").param("groupType", "LECTURE")
+                        .with(user(D2).roles("DOCTOR")))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("NOT_YOUR_COURSE"));
+    }
+
     // ================================================================ helpers
 
     private ResultActions rule(String doctor, String type, String body) throws Exception {
