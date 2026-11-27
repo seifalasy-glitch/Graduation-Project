@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 /**
  * API contract (Offering): the course and the term are sent as objects, not as ids.
- * enrolledCount is added when the enrollments module exists.
+ * enrolledCount = ACTIVE enrollments (the seats that count against capacity).
  */
 public record CourseOfferingResponse(
 
@@ -18,7 +18,9 @@ public record CourseOfferingResponse(
 
         Integer capacity,
 
-        BigDecimal courseworkMax
+        BigDecimal courseworkMax,
+
+        long enrolledCount
 
 ) {
 }

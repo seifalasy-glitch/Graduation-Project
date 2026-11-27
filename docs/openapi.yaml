@@ -1519,6 +1519,11 @@ paths:
       tags: [My Dashboard]
       summary: Numbers for the admin home page
       operationId: getAdminStats
+      description: |
+        activeUsers = users with status ACTIVE; students / doctors / admins = ACTIVE users
+        with that role; currentTermLabel null between terms (then currentTermOfferings = 0);
+        pendingRegistrations = requests SUBMITTED or ADVISOR_APPROVED (waiting for a decision);
+        openTickets = tickets OPEN or IN_PROGRESS.
       x-roles: [ADMIN]
       responses:
         "200":

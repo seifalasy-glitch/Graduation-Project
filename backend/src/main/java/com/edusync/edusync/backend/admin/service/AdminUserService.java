@@ -209,10 +209,7 @@ public class AdminUserService {
 
         userRepository.saveAndFlush(user);
 
-        return new ResetPasswordResponse(
-                user.getUserId(),
-                temporaryPassword
-        );
+        return new ResetPasswordResponse(temporaryPassword);
     }
 
     @Transactional(readOnly = true)

@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CourseOfferingService {
@@ -42,13 +44,18 @@ public class CourseOfferingService {
     /** API contract: both filters are optional. */
     @Transactional(readOnly = true)
     public List<CourseOfferingResponse> getOfferings(Long termId, Long courseId) {
-        return offeringRepository.findAllWithDetails()
+        List<CourseOffering> offerings = offeringRepository.findAllWithDetails()
                 .stream()
                 .filter(o -> termId == null
                         || termId.equals(o.getTerm().getTermId()))
                 .filter(o -> courseId == null
                         || courseId.equals(o.getCourse().getCourseId()))
-                .map(this::toResponse)
+                .toList();
+
+        // one count query for the whole list, not one per offering
+        Map<Long, Long> enrolled = enrolledCounts(offerings.stream().map(CourseOffering::getOfferingId).toList());
+        return offerings.stream()
+                .map(o -> toResponse(o, enrolled.getOrDefault(o.getOfferingId(), 0L)))
                 .toList();
     }
 
@@ -217,7 +224,24 @@ public class CourseOfferingService {
         }
     }
 
+    /** offeringId -> ACTIVE enrollments; offerings with none are missing (= 0). */
+    private Map<Long, Long> enrolledCounts(List<Long> offeringIds) {
+        Map<Long, Long> counts = new HashMap<>();
+        if (!offeringIds.isEmpty()) {
+            for (Object[] row : offeringRepository.countActiveEnrollments(offeringIds)) {
+                counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+            }
+        }
+        return counts;
+    }
+
+    /** One offering (get / create / update answers): looks up its enrolled count. */
     private CourseOfferingResponse toResponse(CourseOffering offering) {
+        Long id = offering.getOfferingId();
+        return toResponse(offering, id == null ? 0L : enrolledCounts(List.of(id)).getOrDefault(id, 0L));
+    }
+
+    private CourseOfferingResponse toResponse(CourseOffering offering, long enrolledCount) {
         AcademicCourse course = offering.getCourse();
         AcademicTerm term = offering.getTerm();
 
@@ -238,7 +262,8 @@ public class CourseOfferingService {
                 ),
                 offering.getSection(),
                 offering.getCapacity(),
-                offering.getCourseworkMax()
+                offering.getCourseworkMax(),
+                enrolledCount
         );
     }
 }

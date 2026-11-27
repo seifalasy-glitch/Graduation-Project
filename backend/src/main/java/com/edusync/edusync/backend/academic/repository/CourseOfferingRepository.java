@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,17 @@ public interface CourseOfferingRepository extends JpaRepository<CourseOffering, 
             order by o.offeringId desc
             """)
     List<CourseOffering> findAllWithDetails();
+
+    /**
+     * Offering.enrolledCount: ACTIVE enrollments (the same count the seat / OFFERING_FULL
+     * check uses). One query for all the given offerings; each row is [offeringId, count].
+     */
+    @Query(value = """
+            SELECT offering_id, COUNT(*) FROM enrollment
+            WHERE status = 'ACTIVE' AND offering_id IN (:ids)
+            GROUP BY offering_id
+            """, nativeQuery = true)
+    List<Object[]> countActiveEnrollments(@Param("ids") Collection<Long> offeringIds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from CourseOffering o where o.offeringId = :offeringId")
